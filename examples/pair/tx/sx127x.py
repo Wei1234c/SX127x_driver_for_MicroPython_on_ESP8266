@@ -3,12 +3,9 @@ from machine import Pin
 import gc
 
 
-LORA_DEFAULT_SS_PIN = 15
-LORA_DEFAULT_RESET_PIN = 4
-LORA_DEFAULT_DIO0_PIN = 5
-
 PA_OUTPUT_RFO_PIN = 0
 PA_OUTPUT_PA_BOOST_PIN = 1
+
 
 # registers
 REG_FIFO = 0x00
@@ -69,7 +66,7 @@ MAX_PKT_LENGTH = 256
 class SX127x:
         
     def __init__(self, spi,
-                 ss_pin_id = LORA_DEFAULT_SS_PIN, reset_pin_id = LORA_DEFAULT_RESET_PIN, dio0_pin_id = LORA_DEFAULT_DIO0_PIN,
+                 ss_pin_id, reset_pin_id, irq_pin_id = None,
                  frequency = 433E6, tx_power_level = 2, 
                  signal_bandwidth = 125E3, spreading_factor = 8, coding_rate = 5,
                  preamble_length = 8, implicitHeaderMode = False, sync_word = 0x12, enable_CRC = False,
@@ -78,7 +75,7 @@ class SX127x:
         self._spi = spi
         self._ss = Pin(ss_pin_id, Pin.OUT)
         self._reset = Pin(reset_pin_id, Pin.OUT)
-        self._irq = Pin(dio0_pin_id, Pin.IN)
+        self._irq = Pin(irq_pin_id, Pin.IN) if irq_pin_id else None
         
         self._packetIndex = 0
         self._onReceive = onReceive
@@ -89,13 +86,13 @@ class SX127x:
         self._reset.value(1)
         sleep(0.01)
 
-        # start SPI        
+        # init ss        
         self._ss.value(1)
-        self._spi.init()  
 
         # check version
-        version = self.readRegister(REG_VERSION)        
-        if version != 0x12: return None
+        version = self.readRegister(REG_VERSION)
+        if version != 0x12:
+            return None
             
         
         # put in LoRa and sleep mode
@@ -127,7 +124,7 @@ class SX127x:
         
         self.standby() 
          
-
+    
     def beginPacket(self, implicitHeader = False):
         
         self.standby()
@@ -380,14 +377,14 @@ class SX127x:
         
     # p0.irq(trigger=Pin.IRQ_FALLING, handler=callback)
     # p2.irq(trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING, handler=callback)
-    def onReceive(self, callback):
-        self._onReceive = callback
-
-        if callback:
-            self.writeRegister(REG_DIO_MAPPING_1, 0x00)
-            self._irq.irq(trigger = Pin.IRQ_RISING, handler = self.handleDio0Rise)
-        else:
-            self._irq.irq(trigger = 0)
+    def onReceive(self, callback):        
+        if self._irq:            
+            if callback:
+                self._onReceive = callback
+                self.writeRegister(REG_DIO_MAPPING_1, 0x00)
+                self._irq.irq(trigger = Pin.IRQ_RISING, handler = self.handleDio0Rise)
+            else:
+                self._irq.irq(trigger = 0)
         
 
     def receive(self, size = 0):
