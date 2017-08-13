@@ -65,24 +65,21 @@ MAX_PKT_LENGTH = 256
 
 class SX127x:
         
-    def __init__(self, spi,
-                 reset_pin, irq_pin = None,
+    def __init__(self,
+                 controller,
                  frequency = 433E6, tx_power_level = 2, 
                  signal_bandwidth = 125E3, spreading_factor = 8, coding_rate = 5,
                  preamble_length = 8, implicitHeaderMode = False, sync_word = 0x12, enable_CRC = False,
-                 onReceive = None,):
+                 onReceive = None):
                  
-        self._spi = spi 
-        self._reset = reset_pin
-        self._irq = irq_pin
-        
+        self.controller = controller        
         self._packetIndex = 0
         self._onReceive = onReceive
 
         # perform reset
-        self._reset.low()
+        self.controller.reset_pin.low()
         sleep(0.01)
-        self._reset.high()
+        self.controller.reset_pin.high()
         sleep(0.01)
 
         # check version
@@ -371,17 +368,15 @@ class SX127x:
         self.writeRegister(REG_MODEM_CONFIG_1, self.readRegister(REG_MODEM_CONFIG_1) | 0x01)
        
         
-    # p0.irq(trigger=Pin.IRQ_FALLING, handler=callback)
-    # p2.irq(trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING, handler=callback)
     def onReceive(self, callback):
         self._onReceive = callback        
         
-        if self._irq:
+        if self.controller.irq_pin:
             if callback:
                 self.writeRegister(REG_DIO_MAPPING_1, 0x00)
-                self._irq.set_handler_for_irq_on_rising_edge(handler = self.handleDio0Rise)
+                self.controller.irq_pin.set_handler_for_irq_on_rising_edge(handler = self.handleDio0Rise)
             else:
-                self._irq.detach_irq()
+                self.controller.irq_pin.detach_irq()
         
 
     def receive(self, size = 0):
@@ -421,12 +416,12 @@ class SX127x:
 
         
     def readRegister(self, address, byteorder = 'big', signed = False):
-        response = self._spi.transfer(address & 0x7f)
+        response = self.controller.spi.transfer(address & 0x7f)
         return int.from_bytes(response, byteorder, signed)  
         
 
     def writeRegister(self, address, value):
-        self._spi.transfer(address | 0x80, value)
+        self.controller.spi.transfer(address | 0x80, value)
 
 
  

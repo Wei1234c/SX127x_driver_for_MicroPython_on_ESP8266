@@ -1,6 +1,3 @@
-import led
-
-
 def receive(lora):
     print("LoRa Receiver")
 
@@ -9,7 +6,7 @@ def receive(lora):
         packetSize = lora.parsePacket()
         
         if packetSize:            
-            led.blink_on_board_led(on_seconds = 0.1, off_seconds = 0.1)
+            lora.controller.blink_led(on_seconds = 0.1, off_seconds = 0.1)
             
             # read packet
             payload = bytearray()

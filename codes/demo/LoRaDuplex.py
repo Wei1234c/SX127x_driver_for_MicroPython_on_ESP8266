@@ -1,5 +1,4 @@
-import time
-import led
+import time 
 from config import WORKER_NAME
 
 msgCount = 0            # count of outgoing messages
@@ -55,7 +54,7 @@ def onReceive(lora, packetSize):
     if packetSize <= 0: 
         return False       # if there's no packet, return
     
-    led.blink_on_board_led(on_seconds = 0.1, off_seconds = 0.1)
+    lora.controller.blink_led(on_seconds = 0.1, off_seconds = 0.1)
     
     # read packet header bytes:
     # recipient = lora.read()         # recipient address

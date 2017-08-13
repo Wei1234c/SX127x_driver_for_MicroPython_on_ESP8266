@@ -1,6 +1,5 @@
 import sx127x
-import config
-
+import config 
 
 # import LoRaDumpRegisters
 # import LoRaSender
@@ -16,9 +15,8 @@ import LoRaDuplexCallback
  
  
 def main(): 
-    lora = sx127x.SX127x(config.spi,
-                         reset_pin = config.reset_pin, 
-                         irq_pin = config.irq_pin)
+    controller = config.Controller()
+    lora = sx127x.SX127x(controller)
     print('lora', lora)
 
     # LoRaDumpRegisters.dumpRegisters(lora)

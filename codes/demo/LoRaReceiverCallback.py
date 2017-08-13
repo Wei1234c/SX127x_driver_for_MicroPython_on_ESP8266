@@ -1,6 +1,3 @@
-import led
-
-
 def receiveCallback(lora): 
     
     print("LoRa Receiver Callback")
@@ -14,7 +11,7 @@ def receiveCallback(lora):
     
 def on_receive(lora, packetSize):
         
-    led.blink_on_board_led(on_seconds = 0.1, off_seconds = 0.1)
+    lora.controller.blink_led(on_seconds = 0.1, off_seconds = 0.1)
     
     # read packet
     payload = bytearray()
