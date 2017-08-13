@@ -66,28 +66,24 @@ MAX_PKT_LENGTH = 256
 class SX127x:
         
     def __init__(self, spi,
-                 ss_pin_id, reset_pin_id, irq_pin_id = None,
+                 reset_pin, irq_pin = None,
                  frequency = 433E6, tx_power_level = 2, 
                  signal_bandwidth = 125E3, spreading_factor = 8, coding_rate = 5,
                  preamble_length = 8, implicitHeaderMode = False, sync_word = 0x12, enable_CRC = False,
                  onReceive = None,):
                  
-        self._spi = spi
-        self._ss = Pin(ss_pin_id, Pin.OUT)
-        self._reset = Pin(reset_pin_id, Pin.OUT)
-        self._irq = Pin(irq_pin_id, Pin.IN) if irq_pin_id else None
+        self._spi = spi 
+        self._reset = reset_pin
+        self._irq = irq_pin
         
         self._packetIndex = 0
         self._onReceive = onReceive
 
         # perform reset
-        self._reset.value(0)
+        self._reset.low()
         sleep(0.01)
-        self._reset.value(1)
+        self._reset.high()
         sleep(0.01)
-
-        # init ss        
-        self._ss.value(1)
 
         # check version
         version = self.readRegister(REG_VERSION)
@@ -377,14 +373,15 @@ class SX127x:
         
     # p0.irq(trigger=Pin.IRQ_FALLING, handler=callback)
     # p2.irq(trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING, handler=callback)
-    def onReceive(self, callback):        
-        if self._irq:            
+    def onReceive(self, callback):
+        self._onReceive = callback        
+        
+        if self._irq:
             if callback:
-                self._onReceive = callback
                 self.writeRegister(REG_DIO_MAPPING_1, 0x00)
-                self._irq.irq(trigger = Pin.IRQ_RISING, handler = self.handleDio0Rise)
+                self._irq.set_handler_for_irq_on_rising_edge(handler = self.handleDio0Rise)
             else:
-                self._irq.irq(trigger = 0)
+                self._irq.detach_irq()
         
 
     def receive(self, size = 0):
@@ -398,8 +395,7 @@ class SX127x:
         self.writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_RX_CONTINUOUS) 
                  
                  
-    def handleDio0Rise(self, event_source):
-        
+    def handleDio0Rise(self, event_source):        
         irqFlags = self.readRegister(REG_IRQ_FLAGS)
 
         # clear IRQ's
@@ -425,23 +421,13 @@ class SX127x:
 
         
     def readRegister(self, address, byteorder = 'big', signed = False):
-        response = self.singleTransfer(address & 0x7f)
+        response = self._spi.transfer(address & 0x7f)
         return int.from_bytes(response, byteorder, signed)  
         
 
     def writeRegister(self, address, value):
-        self.singleTransfer(address | 0x80, value)
+        self._spi.transfer(address | 0x80, value)
 
 
-    def singleTransfer(self, address, value = 0x00):        
-        response = bytearray(1)
-        
-        self._ss.value(0)
-         
-        self._spi.write(bytes([address]))
-        self._spi.write_readinto(bytes([value]), response)
-        
-        self._ss.value(1)
-
-        return response   
+ 
         

@@ -16,10 +16,9 @@ import LoRaSender
  
  
 def main(): 
-    lora = sx127x.SX127x(config.spi, 
-                         ss_pin_id = config.LORA_SS_PIN, 
-                         reset_pin_id = config.LORA_RESET_PIN, 
-                         irq_pin_id = config.LORA_IRQ_PIN)
+    lora = sx127x.SX127x(config.spi,
+                         reset_pin = config.reset_pin, 
+                         irq_pin = config.irq_pin)
     print('lora', lora)
 
     # LoRaDumpRegisters.dumpRegisters(lora)
