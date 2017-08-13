@@ -10,7 +10,7 @@ IS_RPi = not (IS_MICROPYTHON or IS_PC)
 
 
 if IS_MICROPYTHON:
-    from machine import Pin, SPI, unique_id
+    from machine import Pin, SPI, unique_id, reset
     import ubinascii
     unique_id = ubinascii.hexlify(unique_id()).decode() 
     WORKER_NAME = 'NodeMCU_' + unique_id
@@ -30,11 +30,14 @@ if IS_MICROPYTHON:
         
     if IS_ESP32:
         import hardware_esp32 as hardware
-        spi = SPI(1, baudrate = 10000000, polarity = 0, phase = 0, bits = 8, firstbit = SPI.MSB,
-                  sck = Pin(LORA_SCK_PIN, Pin.OUT), 
-                  mosi = Pin(LORA_MOSI_PIN, Pin.OUT), 
-                  miso = Pin(LORA_MISO_PIN, Pin.IN)) 
-
+        try:
+            spi = SPI(1, baudrate = 10000000, polarity = 0, phase = 0, bits = 8, firstbit = SPI.MSB,
+                      sck = Pin(LORA_SCK_PIN, Pin.OUT), 
+                      mosi = Pin(LORA_MOSI_PIN, Pin.OUT), 
+                      miso = Pin(LORA_MISO_PIN, Pin.IN)) 
+        except Exception as e:
+            print(e)
+            reset()  # SPI is already in use, need to reset.
                   
     class mock:
         pass
@@ -58,11 +61,11 @@ if IS_MICROPYTHON:
         pin.detach_irq = lambda : pin.irq(handler = None, trigger = 0)
         return pin
 
-    def prepare_spi(spi):
-        spi.init()
-        new_spi = mock()        
+    def prepare_spi(spi):       
         ss = prepare_pin(LORA_SS_PIN)
         ss.high()
+        spi.init()               
+        new_spi = mock()  
     
         def transfer(address, value = 0x00):        
             response = bytearray(1)
