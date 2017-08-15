@@ -6,14 +6,13 @@ def receive(lora):
         packetSize = lora.parsePacket()
         
         if packetSize:            
-            lora.controller.blink_led(on_seconds = 0.1, off_seconds = 0.1)
+            lora.controller.blink_led()
             
             # read packet
-            payload = bytearray()
-            
-            while (lora.available()):
-                b = lora.read()
-                if b: payload.append(b)
-                
-            print("Received packet\n{}".format(bytes(payload).decode()))
+            payload = lora.read_payload()
+                    
+            try:
+                print("*** Received message ***\n{}".format(payload.decode()))
+            except Exception as e:
+                print(e)
             print("with RSSI: {}\n".format(lora.packetRssi()))

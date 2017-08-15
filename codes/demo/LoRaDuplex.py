@@ -1,5 +1,4 @@
-import time 
-from config import WORKER_NAME
+from config import NODE_NAME, millisecond
 
 msgCount = 0            # count of outgoing messages
 localAddress = 0xBB     # address of this device
@@ -17,16 +16,16 @@ def duplex(lora):
 
 def do_loop(lora):    
     
-    lastSendTime = time.ticks_ms()
+    lastSendTime = millisecond()
     interval = (lastSendTime % 2000) + 1000
     global msgCount
 
     while True:
-        if (time.ticks_ms() - lastSendTime > interval):
-            message = "HeLoRa World! - from {} {}".format(WORKER_NAME, msgCount)
+        if (millisecond() - lastSendTime > interval):
+            message = "HeLoRa World! - from {} {}".format(NODE_NAME, msgCount)
             sendMessage(lora, message)
             print("Sending message:\n{}\n".format(message))
-            lastSendTime = time.ticks_ms()          # timestamp the message
+            lastSendTime = millisecond()          # timestamp the message
             interval = (lastSendTime % 2000) + 1000    # 2-3 seconds
             msgCount += 1
 
@@ -54,7 +53,7 @@ def onReceive(lora, packetSize):
     if packetSize <= 0: 
         return False       # if there's no packet, return
     
-    lora.controller.blink_led(on_seconds = 0.1, off_seconds = 0.1)
+    lora.controller.blink_led()
     
     # read packet header bytes:
     # recipient = lora.read()         # recipient address
@@ -62,14 +61,12 @@ def onReceive(lora, packetSize):
     # incomingMsgId = lora.read()     # incoming msg ID
     # incomingLength = lora.read()    # incoming msg length
 
-    payload = bytearray()
-
-    while (lora.available()):
-        b = lora.read()
-        if b and 32 <= b <= 126:
-            payload.append(b)
-        
-    print("*** Received message ***\n{}".format(bytes(payload).decode())) 
+    payload = lora.read_payload()
+            
+    try:
+        print("*** Received message ***\n{}".format(payload.decode()))
+    except Exception as e:
+        print(e)
     print("with RSSI {}\n".format(lora.packetRssi()))
 
     # if len(payload) != incomingLength :   # check length for error
@@ -86,7 +83,7 @@ def onReceive(lora, packetSize):
         # print("Sent to: 0x{0:0x}".format(recipient))
         # print("Message ID: {}".format(incomingMsgId))
         # print("Message length: {}".format(incomingLength))
-        # print("Message: {}".format(bytes(payload).decode()))
+        # print("Message: {}".format(payload.decode()))
         # print("RSSI: {}".format(lora.packetRssi()))
         # print("Snr: {}\n".format(lora.packetSnr()))
         

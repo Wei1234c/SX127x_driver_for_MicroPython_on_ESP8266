@@ -1,6 +1,6 @@
-from time import sleep
-from machine import Pin
+from time import sleep 
 import gc
+import config
 
 
 PA_OUTPUT_RFO_PIN = 0
@@ -18,8 +18,8 @@ REG_LNA = 0x0c
 REG_FIFO_ADDR_PTR = 0x0d
 
 REG_FIFO_TX_BASE_ADDR = 0x0e
-# FifoTxBaseAddr = 0x00
-FifoTxBaseAddr = 0x80
+FifoTxBaseAddr = 0x00
+# FifoTxBaseAddr = 0x80
 
 REG_FIFO_RX_BASE_ADDR = 0x0f  
 FifoRxBaseAddr = 0x00 
@@ -64,7 +64,16 @@ MAX_PKT_LENGTH = 256
 
 
 class SX127x:
-        
+    
+    # The controller can be ESP8266, ESP32, Raspberry Pi, or a PC.
+    # The controller needs to provide an interface consisted of:
+    # 1. a SPI, with transfer function.
+    # 2. a reset pin, with low(), high() functions.
+    # 3. IRQ pinS , to be triggered by RFM96W's DIO0~5 pins. These pins each has two functions:
+    #   3.1 set_handler_for_irq_on_rising_edge() 
+    #   3.2 detach_irq()
+    # 4. a function to blink on-board LED. 
+    
     def __init__(self,
                  controller,
                  frequency = 433E6, tx_power_level = 2, 
@@ -77,9 +86,9 @@ class SX127x:
         self._onReceive = onReceive
 
         # perform reset
-        self.controller.reset_pin.low()
+        self.controller.pin_reset.low()
         sleep(0.01)
-        self.controller.reset_pin.high()
+        self.controller.pin_reset.high()
         sleep(0.01)
 
         # check version
@@ -108,8 +117,8 @@ class SX127x:
         self.setSpreadingFactor(spreading_factor)
         self.setCodingRate(coding_rate)
         self.setPreambleLength(preamble_length)
-        # self.setSyncWord(sync_word)        
-        if enable_CRC: self.enableCRC()
+        self.setSyncWord(sync_word) 
+        self.enableCRC(enable_CRC)
         
         # set base addresses
         self.writeRegister(REG_FIFO_TX_BASE_ADDR, FifoTxBaseAddr)
@@ -151,7 +160,8 @@ class SX127x:
 
     def collect_garbage(self):
         gc.collect()
-        print('[Memory - free: {}   allocated: {}]'.format(gc.mem_free(), gc.mem_alloc()))
+        if config.IS_MICROPYTHON:
+            print('[Memory - free: {}   allocated: {}]'.format(gc.mem_free(), gc.mem_alloc()))
         
         
     def packetRssi(self):
@@ -235,10 +245,21 @@ class SX127x:
         return available and not_end_of_buffer
 
 
-    def read(self):
-        if self.available():
+    # def read(self):
+        # if self.available():
+            # self._packetIndex += 1
+            # return self.readRegister(REG_FIFO) 
+            
+            
+    def read_payload(self):
+        payload = bytearray()
+        
+        while (self.available()):
             self._packetIndex += 1
-            return self.readRegister(REG_FIFO) 
+            b = self.readRegister(REG_FIFO) 
+            if b: payload.append(b)
+            
+        return bytes(payload)
         
         
     def standby(self):
@@ -341,21 +362,20 @@ class SX127x:
         self.writeRegister(REG_PREAMBLE_LSB,  (length >> 0) & 0xff)
         
         
-    def enableCRC(self):
-        self.writeRegister(REG_MODEM_CONFIG_2, self.readRegister(REG_MODEM_CONFIG_2) | 0x04)
-        
-
-    # def disableCRC(self):
-        # self.writeRegister(REG_MODEM_CONFIG_2, self.readRegister(REG_MODEM_CONFIG_2) & 0xfb)
+    def enableCRC(self, enable_CRC = False):
+        if enable_CRC:
+            self.writeRegister(REG_MODEM_CONFIG_2, self.readRegister(REG_MODEM_CONFIG_2) | 0x04)
+        else:
+            self.writeRegister(REG_MODEM_CONFIG_2, self.readRegister(REG_MODEM_CONFIG_2) & 0xfb)
   
  
-    # def setSyncWord(self, sw):
-        # self.writeRegister(REG_SYNC_WORD, sw) 
+    def setSyncWord(self, sw):
+        self.writeRegister(REG_SYNC_WORD, sw) 
          
 
-    # def dumpRegisters(self):
-        # for i in range(128):
-            # print("0x{0:02x}: {1}".format(i, self.readRegister(i)))
+    def dumpRegisters(self):
+        for i in range(128):
+            print("0x{0:02x}: {1}".format(i, self.readRegister(i)))
             
 
     def explicitHeaderMode(self):
@@ -371,12 +391,12 @@ class SX127x:
     def onReceive(self, callback):
         self._onReceive = callback        
         
-        if self.controller.irq_pin:
+        if self.controller.pin_RxDone:
             if callback:
                 self.writeRegister(REG_DIO_MAPPING_1, 0x00)
-                self.controller.irq_pin.set_handler_for_irq_on_rising_edge(handler = self.handleDio0Rise)
+                self.controller.pin_RxDone.set_handler_for_irq_on_rising_edge(handler = self.handleOnReceive)
             else:
-                self.controller.irq_pin.detach_irq()
+                self.controller.pin_RxDone.detach_irq()
         
 
     def receive(self, size = 0):
@@ -390,7 +410,7 @@ class SX127x:
         self.writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_RX_CONTINUOUS) 
                  
                  
-    def handleDio0Rise(self, event_source):        
+    def handleOnReceive(self, event_source):        
         irqFlags = self.readRegister(REG_IRQ_FLAGS)
 
         # clear IRQ's
@@ -416,8 +436,8 @@ class SX127x:
 
         
     def readRegister(self, address, byteorder = 'big', signed = False):
-        response = self.controller.spi.transfer(address & 0x7f)
-        return int.from_bytes(response, byteorder, signed)  
+        response = self.controller.spi.transfer(address & 0x7f) 
+        return int.from_bytes(response, byteorder)        
         
 
     def writeRegister(self, address, value):

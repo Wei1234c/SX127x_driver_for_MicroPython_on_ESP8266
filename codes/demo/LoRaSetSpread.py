@@ -1,4 +1,4 @@
-import time
+from config import millisecond
 
 
 msgCount = 0            # count of outgoing messages
@@ -16,16 +16,16 @@ def setSpread(lora):
 
 def do_loop(lora):    
     
-    lastSendTime = time.ticks_ms()
+    lastSendTime = millisecond()
     interval = (lastSendTime % 2000) + 1000
     global msgCount
 
     while True:
-        if (time.ticks_ms() - lastSendTime > interval):
+        if (millisecond() - lastSendTime > interval):
             message = "HeLoRa World! {}".format(msgCount)
             sendMessage(lora, message)
             print("Sending message:\n{}\n".format(message))
-            lastSendTime = time.ticks_ms()          # timestamp the message
+            lastSendTime = millisecond()          # timestamp the message
             interval = (lastSendTime % 2000) + 1000    # 2-3 seconds
             msgCount += 1
 
@@ -44,13 +44,12 @@ def onReceive(lora, packetSize):
         return          # if there's no packet, return
 
     # read packet
-    payload = bytearray()
-
-    while (lora.available()):
-        b = lora.read()
-        if b: payload.append(b)
-
-    print("*** Received message ***\n{}".format(bytes(payload).decode()))
+    payload = lora.read_payload()
+            
+    try:
+        print("*** Received message ***\n{}".format(payload.decode()))
+    except Exception as e:
+        print(e)
     print("RSSI: {}".format(str(lora.packetRssi())))
     print("Snr: {}\n".format(str(lora.packetSnr()))) 
 

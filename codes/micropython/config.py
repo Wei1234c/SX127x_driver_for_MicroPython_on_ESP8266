@@ -1,5 +1,6 @@
 import sys
 import os 
+import time
 
 
 IS_MICROPYTHON = (sys.implementation.name == 'micropython')
@@ -16,15 +17,15 @@ if IS_MICROPYTHON:
     import ubinascii
     unique_id = ubinascii.hexlify(unique_id()).decode()  
         
-    if IS_ESP8266:        
-        import hardware_esp8266 as hardware
-        WORKER_NAME = 'ESP8266_'
+    if IS_ESP8266:
+        NODE_NAME = 'ESP8266_'
     if IS_ESP32:
-        import hardware_esp32 as hardware
-        WORKER_NAME = 'ESP32_'
+        NODE_NAME = 'ESP32_'
         
-    WORKER_NAME = WORKER_NAME + unique_id
+    NODE_NAME = NODE_NAME + unique_id    
     
+    # millisecond
+    millisecond = time.ticks_ms
     
     # Controller
     from controller_esp import Controller
@@ -32,9 +33,27 @@ if IS_MICROPYTHON:
     
         
 if IS_RPi:
-    WORKER_NAME = 'RPi_366'
+    
+    # Node Name
+    import socket
+    NODE_NAME = 'RPi_' + socket.gethostname()
+    
+    # millisecond
+    millisecond = lambda : time.time() * 1000
+    
+    # Controller
+    from controller_rpi import Controller
     
     
     
 if IS_PC:
-    WORKER_NAME = 'PC_366'    
+    
+    # Node Name
+    import socket
+    NODE_NAME = 'PC_' + socket.gethostname()
+    
+    # millisecond
+    millisecond = lambda : time.time() * 1000
+    
+    # Controller
+    from controller_pc import Controller  

@@ -9,9 +9,6 @@ import config
 # import LoRaReceiverCallback
 # import LoRaDuplex
 import LoRaDuplexCallback
-
-# lora = sx127x.SX127x(SPI(1, baudrate=10000000, polarity=0, phase=0))
-# print('lora.begin()', lora.begin())
  
  
 def main(): 
