@@ -15,7 +15,7 @@ except Exception as e:
 class Controller(controller.Controller):
     
     ON_BOARD_LED_PIN_NO = 47  # RPi's on-board LED
-    ON_BOARD_LED_HIGH_IS_ON = True
+    ON_BOARD_LED_HIGH_IS_ON = False
     GPIO_PINS = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 16, 27,)
             
     PIN_ID_FOR_LORA_RESET = 5
@@ -97,7 +97,7 @@ class Controller(controller.Controller):
     def prepare_spi(self, spi): 
         if spi:
             spi.open(0, 0) 
-            spi.max_speed_hz = 10000000
+            spi.max_speed_hz = 1000000 # 10000000
             spi.mode = 0b00
             spi.lsbfirst = False
             new_spi = Controller.Mock()  
