@@ -1,6 +1,7 @@
 import RPi.GPIO as GPIO
-import controller 
 import spidev
+import controller 
+
 
 GPIO.setmode(GPIO.BCM)
 
@@ -43,17 +44,22 @@ class Controller(controller.Controller):
     def __init__(self, 
                  spi = spi, 
                  pin_id_led = ON_BOARD_LED_PIN_NO, 
+                 on_board_led_high_is_on = ON_BOARD_LED_HIGH_IS_ON,
                  pin_id_reset = PIN_ID_FOR_LORA_RESET, 
+                 pin_id_ss = PIN_ID_FOR_LORA_SS,
                  pin_id_RxDone = PIN_ID_FOR_LORA_DIO0,
                  pin_id_RxTimeout = PIN_ID_FOR_LORA_DIO1,
-                 pin_id_ValidHeader = None,
+                 pin_id_ValidHeader = PIN_ID_FOR_LORA_DIO2,
                  pin_id_CadDone = PIN_ID_FOR_LORA_DIO3,
                  pin_id_CadDetected = PIN_ID_FOR_LORA_DIO4,
-                 pin_id_PayloadCrcError = None):
+                 pin_id_PayloadCrcError = PIN_ID_FOR_LORA_DIO5, 
+                 blink_on_start = (2, 0.5, 0.5)):
                 
         super().__init__(spi, 
                          pin_id_led,
+                         on_board_led_high_is_on,
                          pin_id_reset, 
+                         pin_id_ss,
                          pin_id_RxDone,
                          pin_id_RxTimeout,
                          pin_id_ValidHeader,

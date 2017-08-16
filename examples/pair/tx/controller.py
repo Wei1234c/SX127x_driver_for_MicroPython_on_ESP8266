@@ -26,10 +26,13 @@ class Controller:
     PIN_ID_FOR_LORA_DIO4 = None
     PIN_ID_FOR_LORA_DIO5 = None
     
+    
     def __init__(self,
                  spi = spi, 
                  pin_id_led = ON_BOARD_LED_PIN_NO, 
+                 on_board_led_high_is_on = ON_BOARD_LED_HIGH_IS_ON,
                  pin_id_reset = PIN_ID_FOR_LORA_RESET, 
+                 pin_id_ss = PIN_ID_FOR_LORA_SS,
                  pin_id_RxDone = PIN_ID_FOR_LORA_DIO0,
                  pin_id_RxTimeout = PIN_ID_FOR_LORA_DIO1,
                  pin_id_ValidHeader = PIN_ID_FOR_LORA_DIO2,
@@ -37,12 +40,14 @@ class Controller:
                  pin_id_CadDetected = PIN_ID_FOR_LORA_DIO4,
                  pin_id_PayloadCrcError = PIN_ID_FOR_LORA_DIO5, 
                  blink_on_start = (2, 0.5, 0.5)):
-        
-        self.spi = self.prepare_spi(spi)
-        
-        self.pin_led = self.prepare_pin(pin_id_led)        
+
+        self.pin_led = self.prepare_pin(pin_id_led)
+        self.on_board_led_high_is_on = on_board_led_high_is_on
         self.pin_reset = self.prepare_pin(pin_id_reset)
+        self.pin_ss = self.prepare_pin(pin_id_ss)
         
+        self.spi = self.prepare_spi(spi)  # needs pin_ss, should be prepared after pin_ss.
+                
         self.pin_RxDone = self.prepare_irq_pin(pin_id_RxDone)
         self.pin_RxTimeout = self.prepare_irq_pin(pin_id_RxTimeout)
         self.pin_ValidHeader = self.prepare_irq_pin(pin_id_ValidHeader)
@@ -84,9 +89,9 @@ class Controller:
 
     def blink_led(self, times = 1, on_seconds = 0.1, off_seconds = 0.1):
         for i in range(times):
-            self.pin_led.high() if Controller.ON_BOARD_LED_HIGH_IS_ON else self.pin_led.low()
+            self.pin_led.high() if self.on_board_led_high_is_on else self.pin_led.low()
             time.sleep(on_seconds)
-            self.pin_led.low() if Controller.ON_BOARD_LED_HIGH_IS_ON else self.pin_led.high()
+            self.pin_led.low() if self.on_board_led_high_is_on else self.pin_led.high()
             time.sleep(off_seconds) 
 
         

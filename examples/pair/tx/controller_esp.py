@@ -31,8 +31,8 @@ class Controller(controller.Controller):
         GPIO_PINS = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
                      12, 13, 14, 15, 16, 17, 18, 19, 21, 22,
                      23, 25, 26, 27, 32, 34, 35, 36, 37, 38, 39)
-        spi = None
-        
+                     
+        spi = None        
         try:
             spi = SPI(1, baudrate = 10000000, polarity = 0, phase = 0, bits = 8, firstbit = SPI.MSB,
                       sck = Pin(PIN_ID_FOR_LORA_SCK, Pin.OUT), 
@@ -47,17 +47,22 @@ class Controller(controller.Controller):
     def __init__(self, 
                  spi = spi, 
                  pin_id_led = ON_BOARD_LED_PIN_NO, 
+                 on_board_led_high_is_on = ON_BOARD_LED_HIGH_IS_ON,
                  pin_id_reset = PIN_ID_FOR_LORA_RESET, 
+                 pin_id_ss = PIN_ID_FOR_LORA_SS,
                  pin_id_RxDone = PIN_ID_FOR_LORA_DIO0,
                  pin_id_RxTimeout = PIN_ID_FOR_LORA_DIO1,
-                 pin_id_ValidHeader = None,
+                 pin_id_ValidHeader = PIN_ID_FOR_LORA_DIO2,
                  pin_id_CadDone = PIN_ID_FOR_LORA_DIO3,
                  pin_id_CadDetected = PIN_ID_FOR_LORA_DIO4,
-                 pin_id_PayloadCrcError = None):
+                 pin_id_PayloadCrcError = PIN_ID_FOR_LORA_DIO5, 
+                 blink_on_start = (2, 0.5, 0.5)):
                 
         super().__init__(spi, 
                          pin_id_led,
+                         on_board_led_high_is_on,
                          pin_id_reset, 
+                         pin_id_ss,
                          pin_id_RxDone,
                          pin_id_RxTimeout,
                          pin_id_ValidHeader,
@@ -91,20 +96,19 @@ class Controller(controller.Controller):
             
     def prepare_spi(self, spi): 
         if spi:
-            ss = self.prepare_pin(Controller.PIN_ID_FOR_LORA_SS)
-            ss.high()
+            self.pin_ss.high()
             spi.init()               
             new_spi = Controller.Mock()  
 
             def transfer(address, value = 0x00):        
                 response = bytearray(1)
 
-                ss.low()
+                self.pin_ss.low()
                  
                 spi.write(bytes([address]))
                 spi.write_readinto(bytes([value]), response)
 
-                ss.high()
+                self.pin_ss.high()
 
                 return response
                 
