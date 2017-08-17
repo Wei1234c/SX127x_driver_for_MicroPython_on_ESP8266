@@ -97,6 +97,8 @@ class Controller(controller.Controller):
     def prepare_spi(self, spi): 
         if spi:
             spi.open(0, 0) 
+            # https://www.raspberrypi.org/documentation/hardware/raspberrypi/spi/README.md
+            # https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=19489
             spi.max_speed_hz = 500000
             spi.mode = 0b00
             spi.lsbfirst = False
