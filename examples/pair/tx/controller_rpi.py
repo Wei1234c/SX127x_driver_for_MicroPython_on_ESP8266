@@ -97,14 +97,14 @@ class Controller(controller.Controller):
     def prepare_spi(self, spi): 
         if spi:
             spi.open(0, 0) 
-            spi.max_speed_hz = 1000000 # 10000000
+            spi.max_speed_hz = 500000
             spi.mode = 0b00
             spi.lsbfirst = False
             new_spi = Controller.Mock()  
 
             def transfer(address, value = 0x00):        
                 response = bytearray(1)             
-                response.append(spi.xfer([address, value])[1])
+                response.append(spi.xfer2([address, value])[1])
                 return response
                 
             new_spi.transfer = transfer
