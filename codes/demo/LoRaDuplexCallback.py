@@ -46,10 +46,10 @@ def on_receive(lora, packetSize):
         return False       # if there's no packet, return
         
     lora.controller.blink_led() 
-    payload = lora.read_payload()
+    payload = lora.read_payload()    
             
     try:
-        print("*** Received message ***\n{}".format(payload.decode()))
+        print("*** Received message ***\n{}".format(payload.decode())) 
     except Exception as e:
         print(e)
     print("with RSSI {}\n".format(lora.packetRssi()))

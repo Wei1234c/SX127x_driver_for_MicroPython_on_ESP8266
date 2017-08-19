@@ -101,7 +101,7 @@ class Controller(controller.Controller):
             spi.open(0, 0) 
             # https://www.raspberrypi.org/documentation/hardware/raspberrypi/spi/README.md
             # https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=19489
-            spi.max_speed_hz = 500000
+            spi.max_speed_hz = 10000000
             spi.mode = 0b00
             spi.lsbfirst = False
             new_spi = Controller.Mock()  
@@ -109,7 +109,7 @@ class Controller(controller.Controller):
             def transfer(address, value = 0x00):        
                 response = bytearray(1)
                 # xfer2(list of values[, speed_hz, delay_usec, bits_per_word])
-                response.append(spi.xfer2([address, value])[1])
+                response.append(spi.xfer([address, value])[1])
                 return response
                 
             new_spi.transfer = transfer

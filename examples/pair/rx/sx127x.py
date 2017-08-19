@@ -24,6 +24,7 @@ FifoTxBaseAddr = 0x00
 REG_FIFO_RX_BASE_ADDR = 0x0f  
 FifoRxBaseAddr = 0x00 
 REG_FIFO_RX_CURRENT_ADDR = 0x10
+REG_IRQ_FLAGS_MASK = 0x11
 REG_IRQ_FLAGS = 0x12
 REG_RX_NB_BYTES = 0x13
 REG_PKT_RSSI_VALUE = 0x1a
@@ -136,6 +137,9 @@ class SX127x:
         else:
             self.explicitHeaderMode() 
 
+        # disable Rx_Done IRQ
+        self.writeRegister(REG_IRQ_FLAGS_MASK, self.readRegister(REG_IRQ_FLAGS_MASK) | IRQ_RX_DONE_MASK) 
+        
         # reset FIFO address and paload length 
         self.writeRegister(REG_FIFO_ADDR_PTR, FifoTxBaseAddr)
         self.writeRegister(REG_PAYLOAD_LENGTH, 0) 
@@ -153,6 +157,9 @@ class SX127x:
             
         # clear IRQ's
         self.writeRegister(REG_IRQ_FLAGS, IRQ_TX_DONE_MASK) 
+        
+        # enable Rx_Done IRQ
+        self.writeRegister(REG_IRQ_FLAGS_MASK, self.readRegister(REG_IRQ_FLAGS_MASK) & ~IRQ_RX_DONE_MASK) 
         
         self.collect_garbage()
         return True
@@ -172,13 +179,13 @@ class SX127x:
         return (self.readRegister(REG_PKT_SNR_VALUE)) * 0.25
 
         
-    def print(self, string):
-        return self.write(string.encode())
+    # def print(self, string):
+        # return self.write(string.encode())
         
     
     def println(self, string):
         self.beginPacket() 
-        self.print(string)
+        self.write(string.encode())
         self.endPacket()  
     
 
@@ -227,9 +234,8 @@ class SX127x:
                 packetLength = self.readRegister(REG_PAYLOAD_LENGTH)
             else:
                 packetLength = self.readRegister(REG_RX_NB_BYTES)
-            
-            FifoRxCurrentAddr = self.readRegister(REG_FIFO_RX_CURRENT_ADDR)                
-            self.writeRegister(REG_FIFO_ADDR_PTR, FifoRxCurrentAddr)
+             
+            self.writeRegister(REG_FIFO_ADDR_PTR, self.readRegister(REG_FIFO_RX_CURRENT_ADDR))
                
             self.collect_garbage()
             
@@ -246,10 +252,10 @@ class SX127x:
         
     def available(self): 
         available = self._packetIndex < self.readRegister(REG_RX_NB_BYTES)        
-        not_end_of_buffer = self.readRegister(REG_FIFO_ADDR_PTR) < MAX_PKT_LENGTH 
+        not_end_of_buffer = self.readRegister(REG_FIFO_ADDR_PTR) < MAX_PKT_LENGTH         
+        # return available 
+        return available and not_end_of_buffer     
         
-        return available and not_end_of_buffer
-
 
     # def read(self):
         # if self.available():
@@ -260,10 +266,10 @@ class SX127x:
     def read_payload(self):
         payload = bytearray()
         
-        while (self.available()):
-            self._packetIndex += 1
+        while (self.available()):        
             b = self.readRegister(REG_FIFO) 
-            if b: payload.append(b)
+            if b: payload.append(b) 
+            self._packetIndex += 1
             
         return bytes(payload)
         
@@ -412,7 +418,7 @@ class SX127x:
         else:
             self.explicitHeaderMode() 
         
-        self.sleep()  # sleep mode will clear FIFO
+        # self.sleep()  # sleep mode will clear FIFO.  # Switch to receive mode will also clear FIFO.
         self.writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_RX_CONTINUOUS) 
                  
                  
@@ -430,7 +436,7 @@ class SX127x:
             packetLength = self.readRegister(REG_PAYLOAD_LENGTH) if self._implicitHeaderMode else self.readRegister(REG_RX_NB_BYTES)
 
             # set FIFO address to current RX address
-            self.writeRegister(REG_FIFO_ADDR_PTR, self.readRegister(REG_FIFO_RX_CURRENT_ADDR))
+            self.writeRegister(REG_FIFO_ADDR_PTR, self.readRegister(REG_FIFO_RX_CURRENT_ADDR))            
 
             if self._onReceive:
                 self._onReceive(self, packetLength)
