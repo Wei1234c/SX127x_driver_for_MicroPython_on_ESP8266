@@ -15,7 +15,7 @@ except Exception as e:
 class Controller(controller.Controller):
     
     ON_BOARD_LED_PIN_NO = 47  # RPi's on-board LED
-    ON_BOARD_LED_HIGH_IS_ON = False
+    ON_BOARD_LED_HIGH_IS_ON = True
     GPIO_PINS = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 16, 27,)
             
     PIN_ID_FOR_LORA_RESET = 5
@@ -96,6 +96,8 @@ class Controller(controller.Controller):
             
     def prepare_spi(self, spi): 
         if spi:
+            # bus = 0
+            # device = 0
             spi.open(0, 0) 
             # https://www.raspberrypi.org/documentation/hardware/raspberrypi/spi/README.md
             # https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=19489
@@ -105,7 +107,8 @@ class Controller(controller.Controller):
             new_spi = Controller.Mock()  
 
             def transfer(address, value = 0x00):        
-                response = bytearray(1)             
+                response = bytearray(1)
+                # xfer2(list of values[, speed_hz, delay_usec, bits_per_word])
                 response.append(spi.xfer2([address, value])[1])
                 return response
                 

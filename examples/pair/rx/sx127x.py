@@ -175,6 +175,12 @@ class SX127x:
     def print(self, string):
         return self.write(string.encode())
         
+    
+    def println(self, string):
+        self.beginPacket() 
+        self.print(string)
+        self.endPacket()  
+    
 
     def write(self, buffer):
         currentLength = self.readRegister(REG_PAYLOAD_LENGTH)

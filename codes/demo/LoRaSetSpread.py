@@ -34,9 +34,7 @@ def do_loop(lora):
     
 
 def sendMessage(lora, outgoing):
-    lora.beginPacket()                  # start packet
-    lora.print(outgoing)
-    lora.endPacket()                    # finish packet and send it 
+    lora.println(outgoing)
     
 
 def onReceive(lora, packetSize):

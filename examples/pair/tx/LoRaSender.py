@@ -7,13 +7,11 @@ def send(lora):
     print("LoRa Sender")
 
     while True:
-        # send packet
-        lora.beginPacket()
+        # send packet 
         payload = 'Hello ({0})'.format(counter)
         print("Sending packet: ")
         print(payload, '\n')
-        lora.print(payload)
-        lora.endPacket()
+        lora.println(payload) 
         
         counter += 1
         sleep(5) 
