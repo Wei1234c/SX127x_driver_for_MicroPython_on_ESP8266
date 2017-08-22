@@ -82,9 +82,9 @@ class SX127x:
                  preamble_length = 8, implicitHeaderMode = False, sync_word = 0x12, enable_CRC = False,
                  onReceive = None):
                  
-        self.controller = controller        
-        self._packetIndex = 0
+        self.controller = controller
         self._onReceive = onReceive
+        self._lock = False
 
         # perform reset
         self.controller.pin_reset.low()
@@ -95,7 +95,7 @@ class SX127x:
         # check version
         version = self.readRegister(REG_VERSION)
         if version != 0x12:
-            return None
+            raise Exception('Invalid version.')
             
         
         # put in LoRa and sleep mode
@@ -126,8 +126,8 @@ class SX127x:
         self.writeRegister(REG_FIFO_RX_BASE_ADDR, FifoRxBaseAddr)
         
         self.standby() 
-         
-    
+              
+        
     def beginPacket(self, implicitHeader = False):
         
         self.standby()
@@ -136,15 +136,10 @@ class SX127x:
             self.implicitHeaderMode()
         else:
             self.explicitHeaderMode() 
-
-        # disable Rx_Done IRQ
-        self.writeRegister(REG_IRQ_FLAGS_MASK, self.readRegister(REG_IRQ_FLAGS_MASK) | IRQ_RX_DONE_MASK) 
-        
+ 
         # reset FIFO address and paload length 
         self.writeRegister(REG_FIFO_ADDR_PTR, FifoTxBaseAddr)
-        self.writeRegister(REG_PAYLOAD_LENGTH, 0) 
-         
-        return True
+        self.writeRegister(REG_PAYLOAD_LENGTH, 0)
      
 
     def endPacket(self):
@@ -156,38 +151,10 @@ class SX127x:
             pass 
             
         # clear IRQ's
-        self.writeRegister(REG_IRQ_FLAGS, IRQ_TX_DONE_MASK) 
-        
-        # enable Rx_Done IRQ
-        self.writeRegister(REG_IRQ_FLAGS_MASK, self.readRegister(REG_IRQ_FLAGS_MASK) & ~IRQ_RX_DONE_MASK) 
+        self.writeRegister(REG_IRQ_FLAGS, IRQ_TX_DONE_MASK)
         
         self.collect_garbage()
-        return True
-     
-
-    def collect_garbage(self):
-        gc.collect()
-        if config.IS_MICROPYTHON:
-            print('[Memory - free: {}   allocated: {}]'.format(gc.mem_free(), gc.mem_alloc()))
-        
-        
-    def packetRssi(self):
-        return (self.readRegister(REG_PKT_RSSI_VALUE) - ( 164 if self._frequency < 868E6 else 157))
-
-
-    def packetSnr(self):
-        return (self.readRegister(REG_PKT_SNR_VALUE)) * 0.25
-
-        
-    # def print(self, string):
-        # return self.write(string.encode())
-        
-    
-    def println(self, string):
-        self.beginPacket() 
-        self.write(string.encode())
-        self.endPacket()  
-    
+   
 
     def write(self, buffer):
         currentLength = self.readRegister(REG_PAYLOAD_LENGTH)
@@ -204,76 +171,42 @@ class SX127x:
         # update length        
         self.writeRegister(REG_PAYLOAD_LENGTH, currentLength + size)
         return size
+
         
-
-    def parsePacket(self, size = 0):
-        packetLength = 0
-        irqFlags = self.readRegister(REG_IRQ_FLAGS)
-
-        if size > 0:
-            self.implicitHeaderMode()
-            self.writeRegister(REG_PAYLOAD_LENGTH, size & 0xff)
-        else:
-            self.explicitHeaderMode()
-
-        # clear IRQ's
-        self.writeRegister(REG_IRQ_FLAGS, irqFlags)
-
-        # if (irqFlags & IRQ_RX_DONE_MASK) and \
-           # (irqFlags & IRQ_RX_TIME_OUT_MASK == 0) and \
-           # (irqFlags & IRQ_PAYLOAD_CRC_ERROR_MASK == 0):
-           
-        if (irqFlags == IRQ_RX_DONE_MASK):  # RX_DONE only
-            # automatically standby when RX_DONE            
-            # received a packet
-            self.standby()  # in case not standby automatically            
-            self._packetIndex = 0
-
-            # read packet length
-            if self._implicitHeaderMode:
-                packetLength = self.readRegister(REG_PAYLOAD_LENGTH)
+    def aquire_lock(self, lock = False):
+        if not config.IS_MICROPYTHON:  # MicroPython is single threaded, doesn't need lock.
+            if lock:
+                while self._lock: pass
+                self._lock = True
             else:
-                packetLength = self.readRegister(REG_RX_NB_BYTES)
-             
-            self.writeRegister(REG_FIFO_ADDR_PTR, self.readRegister(REG_FIFO_RX_CURRENT_ADDR))
-               
-            self.collect_garbage()
+                self._lock = False
             
-        elif self.readRegister(REG_OP_MODE) != (MODE_LONG_RANGE_MODE | MODE_RX_SINGLE):
-            # no packet received.            
-            # reset FIFO address
-            self.writeRegister(REG_FIFO_ADDR_PTR, FifoRxBaseAddr)
+            
+    def println(self, string, implicitHeader = False): 
+        
+        self.aquire_lock(True)  # wait until RX_Done, lock and begin writing.
+        
+        self.beginPacket(implicitHeader) 
+        self.write(string.encode())
+        self.endPacket()  
 
-            # put in single RX mode
-            self.writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_RX_SINGLE) 
+        self.aquire_lock(False) # unlock when done writing
 
-        return packetLength
-        
-        
-    def available(self): 
-        available = self._packetIndex < self.readRegister(REG_RX_NB_BYTES)        
-        not_end_of_buffer = self.readRegister(REG_FIFO_ADDR_PTR) < MAX_PKT_LENGTH         
-        # return available 
-        return available and not_end_of_buffer     
-        
+    
+    def getIrqFlags(self):
+        irqFlags = self.readRegister(REG_IRQ_FLAGS)
+        self.writeRegister(REG_IRQ_FLAGS, irqFlags)
+        return irqFlags
 
-    # def read(self):
-        # if self.available():
-            # self._packetIndex += 1
-            # return self.readRegister(REG_FIFO) 
-            
-            
-    def read_payload(self):
-        payload = bytearray()
         
-        while (self.available()):        
-            b = self.readRegister(REG_FIFO) 
-            if b: payload.append(b) 
-            self._packetIndex += 1
-            
-        return bytes(payload)
+    def packetRssi(self):
+        return (self.readRegister(REG_PKT_RSSI_VALUE) - ( 164 if self._frequency < 868E6 else 157))
+
+
+    def packetSnr(self):
+        return (self.readRegister(REG_PKT_SNR_VALUE)) * 0.25
         
-        
+       
     def standby(self):
         self.writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_STDBY)
 
@@ -384,10 +317,17 @@ class SX127x:
     def setSyncWord(self, sw):
         self.writeRegister(REG_SYNC_WORD, sw) 
          
-
+    
+    # def enable_Rx_Done_IRQ(self, enable = True):
+        # if enable:
+            # self.writeRegister(REG_IRQ_FLAGS_MASK, self.readRegister(REG_IRQ_FLAGS_MASK) & ~IRQ_RX_DONE_MASK)
+        # else:
+            # self.writeRegister(REG_IRQ_FLAGS_MASK, self.readRegister(REG_IRQ_FLAGS_MASK) | IRQ_RX_DONE_MASK)
+   
+   
     def dumpRegisters(self):
         for i in range(128):
-            print("0x{0:02x}: {1}".format(i, self.readRegister(i)))
+            print("0x{0:02x}: {1:02x}".format(i, self.readRegister(i)))
             
 
     def explicitHeaderMode(self):
@@ -417,35 +357,73 @@ class SX127x:
             self.writeRegister(REG_PAYLOAD_LENGTH, size & 0xff)
         else:
             self.explicitHeaderMode() 
-        
-        # self.sleep()  # sleep mode will clear FIFO.  # Switch to receive mode will also clear FIFO.
+                
+        # self.writeRegister(REG_FIFO_ADDR_PTR, FifoRxBaseAddr)  # switch to continous receive mode, reset FIFO address pointer automatically.
         self.writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_RX_CONTINUOUS) 
                  
                  
-    def handleOnReceive(self, event_source):        
-        irqFlags = self.readRegister(REG_IRQ_FLAGS)
-
-        # clear IRQ's
-        self.writeRegister(REG_IRQ_FLAGS, irqFlags)
-
-        if (irqFlags & IRQ_PAYLOAD_CRC_ERROR_MASK) == 0:
-            # received a packet
-            self._packetIndex = 0
-
-            # read packet length
-            packetLength = self.readRegister(REG_PAYLOAD_LENGTH) if self._implicitHeaderMode else self.readRegister(REG_RX_NB_BYTES)
-
-            # set FIFO address to current RX address
-            self.writeRegister(REG_FIFO_ADDR_PTR, self.readRegister(REG_FIFO_RX_CURRENT_ADDR))            
-
+    # on RPi, interrupt callback is threaded and racing with main thread, 
+    # Needs a lock for accessing FIFO.
+    # https://sourceforge.net/p/raspberry-gpio-python/wiki/Inputs/
+    # http://raspi.tv/2013/how-to-use-interrupts-with-python-on-the-raspberry-pi-and-rpi-gpio-part-2
+    def handleOnReceive(self, event_source): 
+        self.aquire_lock(True)      # lock until TX_Done
+        
+        if (self.getIrqFlags() & IRQ_PAYLOAD_CRC_ERROR_MASK) == 0:
             if self._onReceive:
-                self._onReceive(self, packetLength)
+                payload = self.read_payload()
+                self.aquire_lock(False)     # unlock when done reading
+                
+                self._onReceive(self, payload)
+                
+        self.aquire_lock(False)     # unlock when done reading
+        
+        
+    def receivedPacket(self, size = 0):
+        irqFlags = self.getIrqFlags()
 
-            # reset FIFO address
-            self.writeRegister(REG_FIFO_ADDR_PTR, FifoRxBaseAddr) 
+        if size > 0:
+            self.implicitHeaderMode()
+            self.writeRegister(REG_PAYLOAD_LENGTH, size & 0xff)
+        else:
+            self.explicitHeaderMode()         
+
+        # if (irqFlags & IRQ_RX_DONE_MASK) and \
+           # (irqFlags & IRQ_RX_TIME_OUT_MASK == 0) and \
+           # (irqFlags & IRQ_PAYLOAD_CRC_ERROR_MASK == 0):
+           
+        if (irqFlags == IRQ_RX_DONE_MASK):  # RX_DONE only
+            # automatically standby when RX_DONE
+            return True
             
-            self.collect_garbage()
-
+        elif self.readRegister(REG_OP_MODE) != (MODE_LONG_RANGE_MODE | MODE_RX_SINGLE):
+            # no packet received.            
+            # reset FIFO address / # enter single RX mode
+            self.writeRegister(REG_FIFO_ADDR_PTR, FifoRxBaseAddr)
+            self.writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_RX_SINGLE)
+        
+            
+    def read_payload(self):
+        # read current RX address
+        fifo_rx_current_addr = self.readRegister(REG_FIFO_RX_CURRENT_ADDR)
+        
+        # read packet length
+        packetLength = self.readRegister(REG_PAYLOAD_LENGTH) if self._implicitHeaderMode else \
+                       self.readRegister(REG_RX_NB_BYTES) 
+        
+        # set FIFO address to current RX address
+        self.writeRegister(REG_FIFO_ADDR_PTR, fifo_rx_current_addr) 
+        
+        payload = bytearray()
+        packetIndex = 0        
+        while packetIndex < packetLength:
+            b = self.readRegister(REG_FIFO)
+            if b: payload.append(b) 
+            packetIndex += 1
+        
+        self.collect_garbage()
+        return bytes(payload)
+                        
         
     def readRegister(self, address, byteorder = 'big', signed = False):
         response = self.controller.spi.transfer(address & 0x7f) 
@@ -456,5 +434,9 @@ class SX127x:
         self.controller.spi.transfer(address | 0x80, value)
 
 
- 
+    def collect_garbage(self):
+        gc.collect()
+        if config.IS_MICROPYTHON:
+            print('[Memory - free: {}   allocated: {}]'.format(gc.mem_free(), gc.mem_alloc()))
+      
         

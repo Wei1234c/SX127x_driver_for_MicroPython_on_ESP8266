@@ -1,14 +1,9 @@
 def receive(lora):
     print("LoRa Receiver")
 
-    while True:
-        # try to parse packet
-        packetSize = lora.parsePacket()
-        
-        if packetSize:            
+    while True:        
+        if lora.receivedPacket():            
             lora.controller.blink_led()
-            
-            # read packet
             payload = lora.read_payload()
                     
             try:
