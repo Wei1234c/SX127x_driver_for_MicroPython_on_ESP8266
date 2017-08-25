@@ -26,6 +26,8 @@ if IS_MICROPYTHON:
     
     # millisecond
     millisecond = time.ticks_ms
+    # microsecond = time.ticks_us
+
     
     # Controller
     from controller_esp import Controller

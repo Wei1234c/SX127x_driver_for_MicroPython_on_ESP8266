@@ -9,6 +9,7 @@ import config
 # import LoRaReceiverCallback
 # import LoRaDuplex
 import LoRaDuplexCallback
+# import LoRaPingPong
  
  
 def main(): 
@@ -44,6 +45,7 @@ def main():
     # LoRaReceiverCallback.receiveCallback(lora)
     # LoRaDuplex.duplex(lora)
     LoRaDuplexCallback.duplexCallback(lora)
+    # LoRaPingPong.ping_pong(lora)
 
     
 if __name__ == '__main__':

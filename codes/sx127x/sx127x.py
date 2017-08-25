@@ -128,8 +128,7 @@ class SX127x:
         self.standby() 
               
         
-    def beginPacket(self, implicitHeader = False):
-        
+    def beginPacket(self, implicitHeader = False):        
         self.standby()
 
         if implicitHeader:
@@ -182,8 +181,7 @@ class SX127x:
                 self._lock = False
             
             
-    def println(self, string, implicitHeader = False): 
-        
+    def println(self, string, implicitHeader = False):        
         self.aquire_lock(True)  # wait until RX_Done, lock and begin writing.
         
         self.beginPacket(implicitHeader) 
@@ -218,20 +216,12 @@ class SX127x:
     def setTxPower(self, level, outputPin = PA_OUTPUT_PA_BOOST_PIN):
         if (outputPin == PA_OUTPUT_RFO_PIN):
             # RFO
-            if level < 0:
-                evel = 0
-            elif level > 14:
-                level = 14 
-
+            level = min(max(level, 0), 14)
             self.writeRegister(REG_PA_CONFIG, 0x70 | level)
             
         else:
-            # PA BOOST
-            if level < 2:
-                level = 2
-            elif level > 17:
-                level = 17 
-
+            # PA BOOST                
+            level = min(max(level, 2), 17)
             self.writeRegister(REG_PA_CONFIG, PA_BOOST | (level - 2))
             
 
@@ -251,11 +241,8 @@ class SX127x:
         
 
     def setSpreadingFactor(self, sf):
-        if sf < 6:
-            sf = 6
-        elif sf > 12:
-            sf = 12 
-
+        sf = min(max(sf, 6), 12)
+            
         if sf == 6:
             self.writeRegister(REG_DETECTION_OPTIMIZE, 0xc5)
             self.writeRegister(REG_DETECTION_THRESHOLD, 0x0c)
@@ -266,38 +253,20 @@ class SX127x:
         self.writeRegister(REG_MODEM_CONFIG_2, (self.readRegister(REG_MODEM_CONFIG_2) & 0x0f) | ((sf << 4) & 0xf0))
 
         
-    def setSignalBandwidth(self, sbw):
-        
+    def setSignalBandwidth(self, sbw):        
+        bins = (7.8E3, 10.4E3, 15.6E3, 20.8E3, 31.25E3, 41.7E3, 62.5E3, 125E3, 250E3)
         bw = 9
-
-        if (sbw <= 7.8E3):
-            bw = 0
-        elif (sbw <= 10.4E3):
-            bw = 1
-        elif (sbw <= 15.6E3):
-            bw = 2
-        elif (sbw <= 20.8E3):
-            bw = 3
-        elif (sbw <= 31.25E3):
-            bw = 4
-        elif (sbw <= 41.7E3):
-            bw = 5
-        elif (sbw <= 62.5E3):
-            bw = 6
-        elif (sbw <= 125E3):
-            bw = 7
-        elif (sbw <= 250E3):
-            bw = 8
+        
+        for i in range(len(bins)):
+            if sbw <= bins[i]:
+                bw = i
+                break
         
         self.writeRegister(REG_MODEM_CONFIG_1, (self.readRegister(REG_MODEM_CONFIG_1) & 0x0f) | (bw << 4))
 
 
     def setCodingRate(self, denominator):
-        if denominator < 5:
-            denominator = 5
-        elif denominator > 8:
-            denominator = 8
-
+        denominator = min(max(denominator, 5), 8)        
         cr = denominator - 4
         self.writeRegister(REG_MODEM_CONFIG_1, (self.readRegister(REG_MODEM_CONFIG_1) & 0xf1) | (cr << 1))
         
@@ -357,8 +326,9 @@ class SX127x:
             self.writeRegister(REG_PAYLOAD_LENGTH, size & 0xff)
         else:
             self.explicitHeaderMode() 
-                
-        # self.writeRegister(REG_FIFO_ADDR_PTR, FifoRxBaseAddr)  # switch to continous receive mode, reset FIFO address pointer automatically.
+        
+        # The last packet always starts at FIFO_RX_CURRENT_ADDR
+        # no need to reset FIFO_ADDR_PTR
         self.writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_RX_CONTINUOUS) 
                  
                  
@@ -367,8 +337,9 @@ class SX127x:
     # https://sourceforge.net/p/raspberry-gpio-python/wiki/Inputs/
     # http://raspi.tv/2013/how-to-use-interrupts-with-python-on-the-raspberry-pi-and-rpi-gpio-part-2
     def handleOnReceive(self, event_source): 
-        self.aquire_lock(True)      # lock until TX_Done
+        self.aquire_lock(True)              # lock until TX_Done 
         
+        # irqFlags = self.getIrqFlags() should be 0x50
         if (self.getIrqFlags() & IRQ_PAYLOAD_CRC_ERROR_MASK) == 0:
             if self._onReceive:
                 payload = self.read_payload()
@@ -376,7 +347,7 @@ class SX127x:
                 
                 self._onReceive(self, payload)
                 
-        self.aquire_lock(False)     # unlock when done reading
+        self.aquire_lock(False)             # unlock in any case.
         
         
     def receivedPacket(self, size = 0):
@@ -392,7 +363,7 @@ class SX127x:
            # (irqFlags & IRQ_RX_TIME_OUT_MASK == 0) and \
            # (irqFlags & IRQ_PAYLOAD_CRC_ERROR_MASK == 0):
            
-        if (irqFlags == IRQ_RX_DONE_MASK):  # RX_DONE only
+        if (irqFlags == IRQ_RX_DONE_MASK):  # RX_DONE only, irqFlags should be 0x40
             # automatically standby when RX_DONE
             return True
             
@@ -404,21 +375,18 @@ class SX127x:
         
             
     def read_payload(self):
-        # read current RX address
-        fifo_rx_current_addr = self.readRegister(REG_FIFO_RX_CURRENT_ADDR)
+        # set FIFO address to current RX address
+        # fifo_rx_current_addr = self.readRegister(REG_FIFO_RX_CURRENT_ADDR)
+        self.writeRegister(REG_FIFO_ADDR_PTR, self.readRegister(REG_FIFO_RX_CURRENT_ADDR))
         
         # read packet length
         packetLength = self.readRegister(REG_PAYLOAD_LENGTH) if self._implicitHeaderMode else \
-                       self.readRegister(REG_RX_NB_BYTES) 
-        
-        # set FIFO address to current RX address
-        self.writeRegister(REG_FIFO_ADDR_PTR, fifo_rx_current_addr) 
-        
+                       self.readRegister(REG_RX_NB_BYTES)
+                       
         payload = bytearray()
         packetIndex = 0        
         while packetIndex < packetLength:
-            b = self.readRegister(REG_FIFO)
-            if b: payload.append(b) 
+            payload.append(self.readRegister(REG_FIFO))
             packetIndex += 1
         
         self.collect_garbage()
@@ -438,5 +406,4 @@ class SX127x:
         gc.collect()
         if config.IS_MICROPYTHON:
             print('[Memory - free: {}   allocated: {}]'.format(gc.mem_free(), gc.mem_alloc()))
-      
-        
+            

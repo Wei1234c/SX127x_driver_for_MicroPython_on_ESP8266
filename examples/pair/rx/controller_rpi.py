@@ -94,13 +94,13 @@ class Controller(controller.Controller):
             return pin
 
             
+    # https://www.raspberrypi.org/documentation/hardware/raspberrypi/spi/README.md
+    # https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=19489
     def prepare_spi(self, spi): 
         if spi:
             # bus = 0
             # device = 0
-            spi.open(0, 0) 
-            # https://www.raspberrypi.org/documentation/hardware/raspberrypi/spi/README.md
-            # https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=19489
+            spi.open(0, 0)            
             spi.max_speed_hz = 10000000
             spi.mode = 0b00
             spi.lsbfirst = False
