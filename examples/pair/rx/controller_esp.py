@@ -17,7 +17,9 @@ class Controller(controller.Controller):
     PIN_ID_FOR_LORA_DIO2 = None 
     PIN_ID_FOR_LORA_DIO3 = None
     PIN_ID_FOR_LORA_DIO4 = None
-    PIN_ID_FOR_LORA_DIO5 = None    
+    PIN_ID_FOR_LORA_DIO5 = None 
+    
+    spi = None
     
     if config.IS_ESP8266:
         ON_BOARD_LED_PIN_NO = 2
@@ -30,9 +32,7 @@ class Controller(controller.Controller):
         ON_BOARD_LED_HIGH_IS_ON = True
         GPIO_PINS = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
                      12, 13, 14, 15, 16, 17, 18, 19, 21, 22,
-                     23, 25, 26, 27, 32, 34, 35, 36, 37, 38, 39)
-                     
-        spi = None        
+                     23, 25, 26, 27, 32, 34, 35, 36, 37, 38, 39)                     
         try:
             spi = SPI(1, baudrate = 10000000, polarity = 0, phase = 0, bits = 8, firstbit = SPI.MSB,
                       sck = Pin(PIN_ID_FOR_LORA_SCK, Pin.OUT), 

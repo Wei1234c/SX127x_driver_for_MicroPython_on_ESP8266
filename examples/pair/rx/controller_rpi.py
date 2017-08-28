@@ -20,7 +20,8 @@ class Controller(controller.Controller):
             
     PIN_ID_FOR_LORA_RESET = 5
 
-    PIN_ID_FOR_LORA_SS = 8
+    PIN_ID_FOR_LORA_SS = 8  # CE0
+    # PIN_ID_FOR_LORA_SS = 7  # CE1
     PIN_ID_FOR_LORA_SCK = 11
     PIN_ID_FOR_MOSI = 10
     PIN_ID_FOR_MISO = 9
@@ -98,9 +99,9 @@ class Controller(controller.Controller):
     # https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=19489
     def prepare_spi(self, spi): 
         if spi:
-            # bus = 0
-            # device = 0
-            spi.open(0, 0)            
+            bus = 0
+            device = {8:0, 7:1}.get(self.pin_ss.pin_id)
+            spi.open(bus, device)            
             spi.max_speed_hz = 10000000
             spi.mode = 0b00
             spi.lsbfirst = False

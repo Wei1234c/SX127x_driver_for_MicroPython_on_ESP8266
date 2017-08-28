@@ -85,13 +85,20 @@ class Controller:
             # .transfer(address, value = 0x00) 
         '''
         raise NotImplementedError('reason')        
-        
+
+
+    def led_on(self, on = True):
+        if on:
+            self.pin_led.high() if self.on_board_led_high_is_on else self.pin_led.low()
+        else:
+            self.pin_led.low() if self.on_board_led_high_is_on else self.pin_led.high() 
+            
 
     def blink_led(self, times = 1, on_seconds = 0.1, off_seconds = 0.1):
         for i in range(times):
-            self.pin_led.high() if self.on_board_led_high_is_on else self.pin_led.low()
+            self.led_on(True)
             time.sleep(on_seconds)
-            self.pin_led.low() if self.on_board_led_high_is_on else self.pin_led.high()
+            self.led_on(False)
             time.sleep(off_seconds) 
 
         
