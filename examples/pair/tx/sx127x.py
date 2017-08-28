@@ -112,9 +112,9 @@ class SX127x:
         # set auto AGC
         self.writeRegister(REG_MODEM_CONFIG_3, 0x04)
 
-        self.setTxPower(tx_power_level)         
-        self._implicitHeaderMode = implicitHeaderMode
-        if implicitHeaderMode: self.implicitHeaderMode()        
+        self.setTxPower(tx_power_level)
+        self._implicitHeaderMode = None
+        self.implicitHeaderMode(implicitHeaderMode)        
         self.setSpreadingFactor(spreading_factor)
         self.setCodingRate(coding_rate)
         self.setPreambleLength(preamble_length)
@@ -128,13 +128,9 @@ class SX127x:
         self.standby() 
               
         
-    def beginPacket(self, implicitHeader = False):        
+    def beginPacket(self, implicitHeaderMode = False):        
         self.standby()
-
-        if implicitHeader:
-            self.implicitHeaderMode()
-        else:
-            self.explicitHeaderMode() 
+        self.implicitHeaderMode(implicitHeaderMode)
  
         # reset FIFO address and paload length 
         self.writeRegister(REG_FIFO_ADDR_PTR, FifoTxBaseAddr)
@@ -160,8 +156,7 @@ class SX127x:
         size = len(buffer)
 
         # check size
-        if (currentLength + size) > (MAX_PKT_LENGTH - FifoTxBaseAddr) :
-            size = (MAX_PKT_LENGTH - FifoTxBaseAddr) - currentLength 
+        size = min(size, (MAX_PKT_LENGTH - FifoTxBaseAddr - currentLength))
 
         # write data
         for i in range(size):
@@ -198,7 +193,7 @@ class SX127x:
 
         
     def packetRssi(self):
-        return (self.readRegister(REG_PKT_RSSI_VALUE) - ( 164 if self._frequency < 868E6 else 157))
+        return (self.readRegister(REG_PKT_RSSI_VALUE) - (164 if self._frequency < 868E6 else 157))
 
 
     def packetSnr(self):
@@ -242,21 +237,15 @@ class SX127x:
 
     def setSpreadingFactor(self, sf):
         sf = min(max(sf, 6), 12)
-            
-        if sf == 6:
-            self.writeRegister(REG_DETECTION_OPTIMIZE, 0xc5)
-            self.writeRegister(REG_DETECTION_THRESHOLD, 0x0c)
-        else:
-            self.writeRegister(REG_DETECTION_OPTIMIZE, 0xc3)
-            self.writeRegister(REG_DETECTION_THRESHOLD, 0x0a) 
-
+        self.writeRegister(REG_DETECTION_OPTIMIZE, 0xc5 if sf == 6 else 0xc3)
+        self.writeRegister(REG_DETECTION_THRESHOLD, 0x0c if sf == 6 else 0x0a)
         self.writeRegister(REG_MODEM_CONFIG_2, (self.readRegister(REG_MODEM_CONFIG_2) & 0x0f) | ((sf << 4) & 0xf0))
 
         
     def setSignalBandwidth(self, sbw):        
         bins = (7.8E3, 10.4E3, 15.6E3, 20.8E3, 31.25E3, 41.7E3, 62.5E3, 125E3, 250E3)
-        bw = 9
         
+        bw = 9        
         for i in range(len(bins)):
             if sbw <= bins[i]:
                 bw = i
@@ -277,10 +266,9 @@ class SX127x:
         
         
     def enableCRC(self, enable_CRC = False):
-        if enable_CRC:
-            self.writeRegister(REG_MODEM_CONFIG_2, self.readRegister(REG_MODEM_CONFIG_2) | 0x04)
-        else:
-            self.writeRegister(REG_MODEM_CONFIG_2, self.readRegister(REG_MODEM_CONFIG_2) & 0xfb)
+        modem_config_2 = self.readRegister(REG_MODEM_CONFIG_2)
+        config = modem_config_2 | 0x04 if enable_CRC else modem_config_2 & 0xfb 
+        self.writeRegister(REG_MODEM_CONFIG_2, config)
   
  
     def setSyncWord(self, sw):
@@ -297,16 +285,14 @@ class SX127x:
     def dumpRegisters(self):
         for i in range(128):
             print("0x{0:02x}: {1:02x}".format(i, self.readRegister(i)))
-            
-
-    def explicitHeaderMode(self):
-        self._implicitHeaderMode = False
-        self.writeRegister(REG_MODEM_CONFIG_1, self.readRegister(REG_MODEM_CONFIG_1) & 0xfe)
 
     
-    def implicitHeaderMode(self):
-        self._implicitHeaderMode = True
-        self.writeRegister(REG_MODEM_CONFIG_1, self.readRegister(REG_MODEM_CONFIG_1) | 0x01)
+    def implicitHeaderMode(self, implicitHeaderMode = False):
+        if self._implicitHeaderMode != implicitHeaderMode:  # set value only if different.
+            self._implicitHeaderMode = implicitHeaderMode
+            modem_config_1 = self.readRegister(REG_MODEM_CONFIG_1)
+            config = modem_config_1 | 0x01 if implicitHeaderMode else modem_config_1 & 0xfe
+            self.writeRegister(REG_MODEM_CONFIG_1, config)
        
         
     def onReceive(self, callback):
@@ -321,11 +307,8 @@ class SX127x:
         
 
     def receive(self, size = 0):
-        if size > 0:
-            self.implicitHeaderMode()
-            self.writeRegister(REG_PAYLOAD_LENGTH, size & 0xff)
-        else:
-            self.explicitHeaderMode() 
+        self.implicitHeaderMode(size > 0)
+        if size > 0: self.writeRegister(REG_PAYLOAD_LENGTH, size & 0xff)  
         
         # The last packet always starts at FIFO_RX_CURRENT_ADDR
         # no need to reset FIFO_ADDR_PTR
@@ -352,12 +335,9 @@ class SX127x:
         
     def receivedPacket(self, size = 0):
         irqFlags = self.getIrqFlags()
-
-        if size > 0:
-            self.implicitHeaderMode()
-            self.writeRegister(REG_PAYLOAD_LENGTH, size & 0xff)
-        else:
-            self.explicitHeaderMode()         
+        
+        self.implicitHeaderMode(size > 0)
+        if size > 0: self.writeRegister(REG_PAYLOAD_LENGTH, size & 0xff) 
 
         # if (irqFlags & IRQ_RX_DONE_MASK) and \
            # (irqFlags & IRQ_RX_TIME_OUT_MASK == 0) and \
@@ -384,10 +364,8 @@ class SX127x:
                        self.readRegister(REG_RX_NB_BYTES)
                        
         payload = bytearray()
-        packetIndex = 0        
-        while packetIndex < packetLength:
+        for i in range(packetLength):
             payload.append(self.readRegister(REG_FIFO))
-            packetIndex += 1
         
         self.collect_garbage()
         return bytes(payload)
