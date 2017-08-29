@@ -167,7 +167,7 @@ class SX127x:
         return size
 
         
-    def aquire_lock(self, lock = False):
+    def aquire_lock(self, lock = False):        
         if not config.IS_MICROPYTHON:  # MicroPython is single threaded, doesn't need lock.
             if lock:
                 while self._lock: pass

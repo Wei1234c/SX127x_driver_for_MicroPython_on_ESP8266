@@ -3,36 +3,40 @@ from config import NODE_NAME, millisecond
 
 
 msgCount = 0            # count of outgoing messages
-lastSendTime = 0        # last send time
-interval = 2000         # interval between sends
+INTERVAL = 2000         # interval between sends
+INTERVAL_BASE = 1000    # interval between sends base
 
 messages = {} 
 
 def ping_pong(lora):    
     print("LoRa Duplex with callback")    
     lora.onReceive(on_receive)  # register the receive callback
-    lora.receive()              # go into receive mode
     do_loop(lora)
   
 
 def do_loop(lora):    
+    global msgCount
     
     lastSendTime = millisecond()
-    interval = (lastSendTime % 2000) + 1000
-    global msgCount
+    interval = 0
 
     while True:
-        if (millisecond() - lastSendTime > interval):
-            now =  millisecond()            
+        now = millisecond()
+        if now < lastSendTime: lastSendTime = now 
+        
+        if (now - lastSendTime > interval):
+            lastSendTime = now                                      # timestamp the message
+            interval = (lastSendTime % INTERVAL) + INTERVAL_BASE    # 2-3 seconds             
 
             message = gen_message(NODE_NAME, msgCount, now)
-            sendMessage(lora, message)                  # send message
+            sendMessage(lora, message)                              # send message
 
             key = '{}_{}'.format(NODE_NAME, msgCount)
-            messages[key] = {'node': NODE_NAME, 'msgCount': msgCount, 'ping': now, 'pong': None, 'done': False, 'elipse': None}
-                        
-            lastSendTime = millisecond()                # timestamp the message
-            interval = (lastSendTime % 2000) + 1000     # 2-3 seconds
+            messages[key] = {'node': NODE_NAME, 
+                             'msgCount': msgCount, 
+                             'ping': now, 'pong': None, 
+                             'done': False, 
+                             'elipse': None}
             msgCount += 1 
 
             lora.receive()  # go back into receive mode

@@ -2,8 +2,8 @@ from config import millisecond
 
 
 msgCount = 0            # count of outgoing messages
-interval = 2000          # interval between sends
-lastSendTime = 0        # time of last packet send
+INTERVAL = 2000         # interval between sends
+INTERVAL_BASE = 1000    # interval between sends base
 
 
 def setSpread(lora): 
@@ -14,18 +14,22 @@ def setSpread(lora):
 
 
 def do_loop(lora):    
-    lastSendTime = millisecond()
-    interval = (lastSendTime % 2000) + 1000
     global msgCount
+    
+    lastSendTime = millisecond()
+    interval = 0
 
     while True:
-        if (millisecond() - lastSendTime > interval):
-            message = "HeLoRa World! {}".format(msgCount)
-            sendMessage(lora, message)
+        now = millisecond()
+        if now < lastSendTime: lastSendTime = now 
+        
+        if (now - lastSendTime > interval):
+            lastSendTime = now                                      # timestamp the message
+            interval = (lastSendTime % INTERVAL) + INTERVAL_BASE    # 2-3 seconds   
             
-            lastSendTime = millisecond()          # timestamp the message
-            interval = (lastSendTime % 2000) + 1000    # 2-3 seconds
-            msgCount += 1
+            message = "{} {}".format(NODE_NAME, msgCount)
+            sendMessage(lora, message)                  # send message
+            msgCount += 1 
 
         # parse for a packet, and call onReceive with the result:
         receive(lora) 
