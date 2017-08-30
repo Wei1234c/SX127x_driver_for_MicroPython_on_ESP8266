@@ -88,10 +88,7 @@ class Controller:
 
 
     def led_on(self, on = True):
-        if on:
-            self.pin_led.high() if self.on_board_led_high_is_on else self.pin_led.low()
-        else:
-            self.pin_led.low() if self.on_board_led_high_is_on else self.pin_led.high() 
+        self.pin_led.high() if self.on_board_led_high_is_on == on else self.pin_led.low()
             
 
     def blink_led(self, times = 1, on_seconds = 0.1, off_seconds = 0.1):

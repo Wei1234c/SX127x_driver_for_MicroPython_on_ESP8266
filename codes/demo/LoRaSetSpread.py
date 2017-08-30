@@ -2,8 +2,8 @@ from config import millisecond
 
 
 msgCount = 0            # count of outgoing messages
-INTERVAL = 2000         # interval between sends
-INTERVAL_BASE = 1000    # interval between sends base
+INTERVAL = 1000         # interval between sends
+INTERVAL_BASE = 2000    # interval between sends base
 
 
 def setSpread(lora): 
@@ -16,7 +16,7 @@ def setSpread(lora):
 def do_loop(lora):    
     global msgCount
     
-    lastSendTime = millisecond()
+    lastSendTime = 0
     interval = 0
 
     while True:

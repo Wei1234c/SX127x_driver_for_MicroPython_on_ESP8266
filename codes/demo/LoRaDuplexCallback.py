@@ -3,8 +3,8 @@ from config import NODE_NAME, millisecond
 
 
 msgCount = 0            # count of outgoing messages
-INTERVAL = 2000         # interval between sends
-INTERVAL_BASE = 1000    # interval between sends base
+INTERVAL = 1000         # interval between sends
+INTERVAL_BASE = 2000    # interval between sends base
  
 
 def duplexCallback(lora):    
@@ -16,7 +16,7 @@ def duplexCallback(lora):
 def do_loop(lora):    
     global msgCount
     
-    lastSendTime = millisecond()
+    lastSendTime = 0
     interval = 0
     
     while True:
@@ -28,10 +28,10 @@ def do_loop(lora):
             interval = (lastSendTime % INTERVAL) + INTERVAL_BASE    # 2-3 seconds
             
             message = "{} {}".format(NODE_NAME, msgCount)
-            sendMessage(lora, message)                  # send message
+            sendMessage(lora, message)                              # send message
             msgCount += 1 
 
-            lora.receive()  # go into receive mode
+            lora.receive()                                          # go into receive mode
     
 
 def sendMessage(lora, outgoing):
