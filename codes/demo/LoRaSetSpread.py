@@ -2,7 +2,7 @@ from config import millisecond
 
 
 msgCount = 0            # count of outgoing messages
-INTERVAL = 1000         # interval between sends
+INTERVAL = 2000         # interval between sends
 INTERVAL_BASE = 2000    # interval between sends base
 
 
