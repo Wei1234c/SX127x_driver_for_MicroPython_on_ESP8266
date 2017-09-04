@@ -40,7 +40,7 @@ def sendMessage(lora, outgoing):
 
     
 def on_receive(lora, payload):
-    lora.controller.blink_led()   
+    lora.blink_led()   
             
     try:
         print("*** Received message ***\n{}".format(payload.decode()))

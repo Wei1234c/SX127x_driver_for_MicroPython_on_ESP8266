@@ -7,10 +7,21 @@ import LoRaReceiver
 # import LoRaSetSpread
 # import LoRaSetSyncWord
 # import LoRaReceiverCallback
+# import LoRaReceiverCallback_dual_channels
 # import LoRaDuplex
 # import LoRaDuplexCallback
 # import LoRaPingPong
- 
+
+if config.IS_ESP8266: 
+    PIN_ID_SS = 15
+    PIN_ID_FOR_LORA_DIO0 = 5
+if config.IS_ESP32:
+    PIN_ID_SS = 15
+    PIN_ID_FOR_LORA_DIO0 = 5
+if config.IS_RPi:        
+    PIN_ID_SS = 25
+    PIN_ID_FOR_LORA_DIO0 = 17
+    
  
 def main(): 
     
@@ -29,11 +40,14 @@ def main():
     controller = config.Controller()
     
     # SX127x(controller,
+           # name,
            # frequency = 433E6, tx_power_level = 2, 
            # signal_bandwidth = 125E3, spreading_factor = 8, coding_rate = 5,
            # preamble_length = 8, implicitHeaderMode = False, sync_word = 0x12, enable_CRC = False,
            # onReceive = None)
-    lora = sx127x.SX127x(controller)
+    lora = controller.add_transceiver(sx127x.SX127x(name = 'LoRa'),
+                                      pin_id_ss = PIN_ID_SS,
+                                      pin_id_RxDone = PIN_ID_FOR_LORA_DIO0)
     print('lora', lora)
     
 
@@ -43,6 +57,7 @@ def main():
     # LoRaSetSpread.setSpread(lora)
     # LoRaSetSyncWord.setSyncWord(lora)
     # LoRaReceiverCallback.receiveCallback(lora)
+    # LoRaReceiverCallback_dual_channels.receiveCallback(lora1, lora2)
     # LoRaDuplex.duplex(lora)
     # LoRaDuplexCallback.duplexCallback(lora)
     # LoRaPingPong.ping_pong(lora)

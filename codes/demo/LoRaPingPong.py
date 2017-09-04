@@ -56,7 +56,7 @@ def parse_message(payload):
     
     
 def on_receive(lora, payload):
-    lora.controller.blink_led()
+    lora.blink_led()
     now = millisecond()   
     
     try:

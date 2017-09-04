@@ -39,7 +39,7 @@ def sendMessage(lora, outgoing):
 
 def receive(lora):
     if lora.receivedPacket():    
-        lora.controller.blink_led() 
+        lora.blink_led() 
         payload = lora.read_payload()
                 
         try:

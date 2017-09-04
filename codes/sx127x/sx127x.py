@@ -76,22 +76,19 @@ class SX127x:
     # 4. a function to blink on-board LED. 
     
     def __init__(self,
-                 controller,
-                 frequency = 433E6, tx_power_level = 2, 
-                 signal_bandwidth = 125E3, spreading_factor = 8, coding_rate = 5,
-                 preamble_length = 8, implicitHeaderMode = False, sync_word = 0x12, enable_CRC = False,
+                 name = 'SX127x',
+                 parameters = {'frequency': 433E6, 'tx_power_level': 2, 'signal_bandwidth': 125E3, 
+                               'spreading_factor': 8, 'coding_rate': 5, 'preamble_length': 8, 
+                               'implicitHeader': False, 'sync_word': 0x12, 'enable_CRC': False},
                  onReceive = None):
                  
-        self.controller = controller
+        self.name = name
+        self.parameters = parameters 
         self._onReceive = onReceive
-        self._lock = False
-
-        # perform reset
-        self.controller.pin_reset.low()
-        sleep(0.01)
-        self.controller.pin_reset.high()
-        sleep(0.01)
-
+        self._lock = False 
+        
+     
+    def init(self):
         # check version
         version = self.readRegister(REG_VERSION)
         if version != 0x12:
@@ -103,8 +100,8 @@ class SX127x:
         
         
         # config
-        self.setFrequency(frequency)
-        self.setSignalBandwidth(signal_bandwidth) 
+        self.setFrequency(self.parameters['frequency'])
+        self.setSignalBandwidth(self.parameters['signal_bandwidth'])
 
         # set LNA boost
         self.writeRegister(REG_LNA, self.readRegister(REG_LNA) | 0x03)
@@ -112,14 +109,14 @@ class SX127x:
         # set auto AGC
         self.writeRegister(REG_MODEM_CONFIG_3, 0x04)
 
-        self.setTxPower(tx_power_level)
+        self.setTxPower(self.parameters['tx_power_level'])
         self._implicitHeaderMode = None
-        self.implicitHeaderMode(implicitHeaderMode)        
-        self.setSpreadingFactor(spreading_factor)
-        self.setCodingRate(coding_rate)
-        self.setPreambleLength(preamble_length)
-        self.setSyncWord(sync_word) 
-        self.enableCRC(enable_CRC)
+        self.implicitHeaderMode(self.parameters['implicitHeader'])      
+        self.setSpreadingFactor(self.parameters['spreading_factor'])
+        self.setCodingRate(self.parameters['coding_rate'])
+        self.setPreambleLength(self.parameters['preamble_length'])
+        self.setSyncWord(self.parameters['sync_word'])
+        self.enableCRC(self.parameters['enable_CRC'])
         
         # set base addresses
         self.writeRegister(REG_FIFO_TX_BASE_ADDR, FifoTxBaseAddr)
@@ -298,12 +295,12 @@ class SX127x:
     def onReceive(self, callback):
         self._onReceive = callback        
         
-        if self.controller.pin_RxDone:
+        if self.pin_RxDone:
             if callback:
                 self.writeRegister(REG_DIO_MAPPING_1, 0x00)
-                self.controller.pin_RxDone.set_handler_for_irq_on_rising_edge(handler = self.handleOnReceive)
+                self.pin_RxDone.set_handler_for_irq_on_rising_edge(handler = self.handleOnReceive)
             else:
-                self.controller.pin_RxDone.detach_irq()
+                self.pin_RxDone.detach_irq()
         
 
     def receive(self, size = 0):
@@ -319,14 +316,14 @@ class SX127x:
     # Needs a lock for accessing FIFO.
     # https://sourceforge.net/p/raspberry-gpio-python/wiki/Inputs/
     # http://raspi.tv/2013/how-to-use-interrupts-with-python-on-the-raspberry-pi-and-rpi-gpio-part-2
-    def handleOnReceive(self, event_source): 
+    def handleOnReceive(self, event_source):
         self.aquire_lock(True)              # lock until TX_Done 
         
         # irqFlags = self.getIrqFlags() should be 0x50
         if (self.getIrqFlags() & IRQ_PAYLOAD_CRC_ERROR_MASK) == 0:
             if self._onReceive:
-                payload = self.read_payload()
-                self.aquire_lock(False)     # unlock when done reading
+                payload = self.read_payload()                
+                self.aquire_lock(False)     # unlock when done reading  
                 
                 self._onReceive(self, payload)
                 
@@ -372,12 +369,12 @@ class SX127x:
                         
         
     def readRegister(self, address, byteorder = 'big', signed = False):
-        response = self.controller.spi.transfer(address & 0x7f) 
+        response = self.transfer(self.pin_ss, address & 0x7f) 
         return int.from_bytes(response, byteorder)        
         
 
     def writeRegister(self, address, value):
-        self.controller.spi.transfer(address | 0x80, value)
+        self.transfer(self.pin_ss, address | 0x80, value)
 
 
     def collect_garbage(self):

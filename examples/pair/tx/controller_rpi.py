@@ -20,13 +20,12 @@ class Controller(controller.Controller):
             
     PIN_ID_FOR_LORA_RESET = 5
 
-    PIN_ID_FOR_LORA_SS = 8  # CE0
-    # PIN_ID_FOR_LORA_SS = 7  # CE1
-    PIN_ID_FOR_LORA_SCK = 11
-    PIN_ID_FOR_MOSI = 10
-    PIN_ID_FOR_MISO = 9
+    PIN_ID_SCK = 11
+    PIN_ID_MOSI = 10
+    PIN_ID_MISO = 9
 
-    PIN_ID_FOR_LORA_DIO0 = 4
+    PIN_ID_FOR_LORA_SS = 8
+    PIN_ID_FOR_LORA_DIO0 = 17
     PIN_ID_FOR_LORA_DIO1 = None 
     PIN_ID_FOR_LORA_DIO2 = None 
     PIN_ID_FOR_LORA_DIO3 = None
@@ -35,42 +34,39 @@ class Controller(controller.Controller):
     
     spi = None
     try: 
-        spi = spidev.SpiDev()
+        if not spi:
+            spi = spidev.SpiDev()
+            bus = 0
+            device = 0
+            spi.open(bus, device)            
+            spi.max_speed_hz = 10000000
+            spi.mode = 0b00
+            spi.lsbfirst = False
+            
     except Exception as e:
         print(e)
         GPIO.cleanup()
-        if spi: spi.close()        
+        if spi:
+            spi.close()
+            spi = None
 
 
     def __init__(self, 
                  spi = spi, 
                  pin_id_led = ON_BOARD_LED_PIN_NO, 
                  on_board_led_high_is_on = ON_BOARD_LED_HIGH_IS_ON,
-                 pin_id_reset = PIN_ID_FOR_LORA_RESET, 
-                 pin_id_ss = PIN_ID_FOR_LORA_SS,
-                 pin_id_RxDone = PIN_ID_FOR_LORA_DIO0,
-                 pin_id_RxTimeout = PIN_ID_FOR_LORA_DIO1,
-                 pin_id_ValidHeader = PIN_ID_FOR_LORA_DIO2,
-                 pin_id_CadDone = PIN_ID_FOR_LORA_DIO3,
-                 pin_id_CadDetected = PIN_ID_FOR_LORA_DIO4,
-                 pin_id_PayloadCrcError = PIN_ID_FOR_LORA_DIO5, 
+                 pin_id_reset = PIN_ID_FOR_LORA_RESET,
                  blink_on_start = (2, 0.5, 0.5)):
                 
         super().__init__(spi, 
                          pin_id_led,
                          on_board_led_high_is_on,
-                         pin_id_reset, 
-                         pin_id_ss,
-                         pin_id_RxDone,
-                         pin_id_RxTimeout,
-                         pin_id_ValidHeader,
-                         pin_id_CadDone,
-                         pin_id_CadDetected,
-                         pin_id_PayloadCrcError)
+                         pin_id_reset,
+                         blink_on_start)
 
          
     def prepare_pin(self, pin_id, in_out = GPIO.OUT):
-        if pin_id:
+        if pin_id is not None:
             GPIO.setup(pin_id, in_out) 
             new_pin = Controller.Mock()
             new_pin.pin_id = pin_id
@@ -98,19 +94,16 @@ class Controller(controller.Controller):
     # https://www.raspberrypi.org/documentation/hardware/raspberrypi/spi/README.md
     # https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=19489
     def prepare_spi(self, spi): 
-        if spi:
-            bus = 0
-            device = {8:0, 7:1}.get(self.pin_ss.pin_id)
-            spi.open(bus, device)            
-            spi.max_speed_hz = 10000000
-            spi.mode = 0b00
-            spi.lsbfirst = False
-            new_spi = Controller.Mock()  
+        if spi:            
+            new_spi = Controller.Mock()
 
-            def transfer(address, value = 0x00):        
+            def transfer(pin_ss, address, value = 0x00):        
                 response = bytearray(1)
-                # xfer2(list of values[, speed_hz, delay_usec, bits_per_word])
-                response.append(spi.xfer([address, value])[1])
+                
+                pin_ss.low()
+                response.append(spi.xfer2([address, value])[1])                
+                pin_ss.high()
+                
                 return response
                 
             new_spi.transfer = transfer
