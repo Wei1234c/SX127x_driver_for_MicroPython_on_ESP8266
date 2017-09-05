@@ -51,7 +51,7 @@ class Controller:
                         pin_id_ValidHeader = PIN_ID_FOR_LORA_DIO2,
                         pin_id_CadDone = PIN_ID_FOR_LORA_DIO3,     
                         pin_id_CadDetected = PIN_ID_FOR_LORA_DIO4,
-                        pin_id_PayloadCrcError = PIN_ID_FOR_LORA_DIO5, ):
+                        pin_id_PayloadCrcError = PIN_ID_FOR_LORA_DIO5):
         
         transceiver.transfer = self.spi.transfer
         transceiver.blink_led = self.blink_led
