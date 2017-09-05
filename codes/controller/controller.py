@@ -73,10 +73,11 @@ class Controller:
     def prepare_pin(self, pin_id, in_out = None):
         reason = '''
             # a pin should provide:
+            # .pin_id
             # .low()
             # .high()
             # .value()  # read input.
-            # .irq()  # ref to the irq function of real pin object.
+            # .irq()    # (ESP8266/ESP32 only) ref to the irq function of real pin object.
         '''
         raise NotImplementedError('reason')
         
@@ -94,7 +95,7 @@ class Controller:
         reason = '''
             # a spi should provide: 
             # .close()
-            # .transfer(address, value = 0x00) 
+            # .transfer(pin_ss, address, value = 0x00) 
         '''
         raise NotImplementedError('reason')        
 
