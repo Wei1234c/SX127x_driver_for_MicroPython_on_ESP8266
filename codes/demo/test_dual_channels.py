@@ -1,21 +1,21 @@
 import sx127x
-import config 
+import config_lora 
 
 
 import LoRaReceiverCallback_dual_channels
 # import LoRaReceiverCallback
 
-if config.IS_ESP8266: 
+if config_lora.IS_ESP8266: 
     PIN_ID_SS_1 = 15
     PIN_ID_SS_2 = 16
     PIN_ID_FOR_LORA1_DIO0 = 5
     PIN_ID_FOR_LORA2_DIO0 = 0
-if config.IS_ESP32:
+if config_lora.IS_ESP32:
     PIN_ID_SS_1 = 15
     PIN_ID_SS_2 = 17
     PIN_ID_FOR_LORA1_DIO0 = 5
     PIN_ID_FOR_LORA2_DIO0 = 16
-if config.IS_RPi:        
+if config_lora.IS_RPi:        
     PIN_ID_SS_1 = 25
     PIN_ID_SS_2 = 7
     PIN_ID_FOR_LORA1_DIO0 = 17
@@ -29,7 +29,7 @@ def main():
                # on_board_led_high_is_on = ON_BOARD_LED_HIGH_IS_ON,
                # pin_id_reset = PIN_ID_FOR_LORA_RESET, 
                # blink_on_start = (2, 0.5, 0.5))               
-    controller = config.Controller()
+    controller = config_lora.Controller()
     
     
     # SX127x(name = 'SX127x',

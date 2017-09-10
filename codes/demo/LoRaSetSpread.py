@@ -1,4 +1,4 @@
-from config import millisecond
+from config_lora import millisecond
 
 
 msgCount = 0            # count of outgoing messages

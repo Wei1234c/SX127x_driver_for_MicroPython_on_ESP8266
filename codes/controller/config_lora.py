@@ -10,6 +10,11 @@ IS_ESP8266 = (os.uname().sysname == 'esp8266')
 IS_RPi = not (IS_MICROPYTHON or IS_PC)
 
 
+def mac2eui(mac):
+    mac = mac[0:6] + 'fffe' + mac[6:] 
+    return hex(int(mac[0:2], 16) ^ 2)[2:] + mac[2:] 
+    
+
 if IS_MICROPYTHON:
         
     # Node Name
@@ -22,7 +27,9 @@ if IS_MICROPYTHON:
     if IS_ESP32:
         NODE_NAME = 'ESP32_'
         
-    NODE_NAME = NODE_NAME + unique_id    
+    NODE_EUI = mac2eui(unique_id)
+    NODE_NAME = NODE_NAME + unique_id
+    # NODE_NAME = NODE_NAME + NODE_EUI    
     
     # millisecond
     millisecond = time.ticks_ms

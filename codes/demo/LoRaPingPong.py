@@ -1,5 +1,5 @@
 import time
-from config import NODE_NAME, millisecond
+from config_lora import NODE_NAME, millisecond
 
 
 msgCount = 0            # count of outgoing messages

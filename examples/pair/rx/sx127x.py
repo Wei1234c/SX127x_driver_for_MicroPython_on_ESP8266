@@ -1,6 +1,6 @@
 from time import sleep 
 import gc
-import config
+import config_lora
 
 
 PA_OUTPUT_RFO_PIN = 0
@@ -61,7 +61,7 @@ IRQ_RX_DONE_MASK = 0x40
 IRQ_RX_TIME_OUT_MASK = 0x80
 
 # Buffer size
-MAX_PKT_LENGTH = 256
+MAX_PKT_LENGTH = 255
 
 
 class SX127x:
@@ -165,7 +165,7 @@ class SX127x:
 
         
     def aquire_lock(self, lock = False):        
-        if not config.IS_MICROPYTHON:  # MicroPython is single threaded, doesn't need lock.
+        if not config_lora.IS_MICROPYTHON:  # MicroPython is single threaded, doesn't need lock.
             if lock:
                 while self._lock: pass
                 self._lock = True
@@ -379,6 +379,6 @@ class SX127x:
 
     def collect_garbage(self):
         gc.collect()
-        if config.IS_MICROPYTHON:
+        if config_lora.IS_MICROPYTHON:
             print('[Memory - free: {}   allocated: {}]'.format(gc.mem_free(), gc.mem_alloc()))
             

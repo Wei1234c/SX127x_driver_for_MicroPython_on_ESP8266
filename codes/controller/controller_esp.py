@@ -1,5 +1,5 @@
 from machine import Pin, SPI, reset
-import config
+import config_lora
 import controller 
  
 
@@ -21,7 +21,7 @@ class Controller(controller.Controller):
     
     spi = None
     
-    if config.IS_ESP8266:
+    if config_lora.IS_ESP8266:
         ON_BOARD_LED_PIN_NO = 2
         ON_BOARD_LED_HIGH_IS_ON = False
         GPIO_PINS = (0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 16)
@@ -29,7 +29,7 @@ class Controller(controller.Controller):
             spi = SPI(1, baudrate = 10000000, polarity = 0, phase = 0)
             spi.init()
         
-    if config.IS_ESP32:
+    if config_lora.IS_ESP32:
         ON_BOARD_LED_PIN_NO = 2
         ON_BOARD_LED_HIGH_IS_ON = True
         GPIO_PINS = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
