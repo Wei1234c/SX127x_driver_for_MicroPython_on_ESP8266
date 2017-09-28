@@ -73,17 +73,19 @@ class Controller(controller.Controller):
             
     def get_spi(self): 
         spi = None
+        id = 1
         
         if config_lora.IS_ESP8266:
-            spi = SPI(1, baudrate = 10000000, polarity = 0, phase = 0)
+            spi = SPI(id, baudrate = 10000000, polarity = 0, phase = 0)
             spi.init()
             
-        if config_lora.IS_ESP32:                  
+        if config_lora.IS_ESP32:
             try:
-                spi = SPI(1, baudrate = 10000000, polarity = 0, phase = 0, bits = 8, firstbit = SPI.MSB,
-                          sck = Pin(self.PIN_ID_SCK, Pin.OUT),
-                          mosi = Pin(self.PIN_ID_MOSI, Pin.OUT),
-                          miso = Pin(self.PIN_ID_MISO, Pin.IN))
+                if config_lora.SOFT_SPI: id = -1              
+                spi = SPI(id, baudrate = 10000000, polarity = 0, phase = 0, bits = 8, firstbit = SPI.MSB,
+                          sck = Pin(self.PIN_ID_SCK, Pin.OUT, Pin.PULL_DOWN),
+                          mosi = Pin(self.PIN_ID_MOSI, Pin.OUT, Pin.PULL_UP),
+                          miso = Pin(self.PIN_ID_MISO, Pin.IN, Pin.PULL_UP))
                 spi.init()
                     
             except Exception as e:

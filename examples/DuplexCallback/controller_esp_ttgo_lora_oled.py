@@ -52,9 +52,7 @@ class Controller(controller_esp.Controller, display_ssd1306_i2c.Display):
                                            on_board_led_high_is_on,
                                            pin_id_reset,
                                            blink_on_start)
-        
-        # Crucial! SCL must be setup as output pin.
-        self.prepare_pin(scl_pin_id)
+                                           
         self.reset_pin(self.prepare_pin(self.PIN_ID_FOR_OLED_RESET))        
         display_ssd1306_i2c.Display.__init__(self, 
                                              width = oled_width, height = oled_height, 

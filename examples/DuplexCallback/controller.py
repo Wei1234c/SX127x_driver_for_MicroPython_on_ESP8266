@@ -33,11 +33,11 @@ class Controller:
                  
         self.pin_led = self.prepare_pin(pin_id_led)
         self.on_board_led_high_is_on = on_board_led_high_is_on
-        self.pin_reset = self.prepare_pin(pin_id_reset)        
+        self.pin_reset = self.prepare_pin(pin_id_reset)
         self.spi = self.prepare_spi(self.get_spi())
         self.reset_pin(self.pin_reset)
         self.transceivers = {}
-        self.blink_led(*blink_on_start)
+        self.blink_led(*blink_on_start) 
         
 
     def add_transceiver(self, 
@@ -61,8 +61,7 @@ class Controller:
         transceiver.pin_CadDetected = self.prepare_irq_pin(pin_id_CadDetected)
         transceiver.pin_PayloadCrcError = self.prepare_irq_pin(pin_id_PayloadCrcError)
         
-        transceiver.init()
-        
+        transceiver.init()        
         self.transceivers[transceiver.name] = transceiver 
         return transceiver
         
