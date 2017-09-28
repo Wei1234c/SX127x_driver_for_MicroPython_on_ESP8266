@@ -10,21 +10,11 @@ import config_lora
 # import LoRaDuplex
 import LoRaDuplexCallback
 # import LoRaPingPong
-
-if config_lora.IS_ESP8266: 
-    PIN_ID_SS = 15
-    PIN_ID_FOR_LORA_DIO0 = 5
-if config_lora.IS_ESP32:
-    PIN_ID_SS = 15
-    PIN_ID_FOR_LORA_DIO0 = 5
-if config_lora.IS_RPi:        
-    PIN_ID_SS = 25
-    PIN_ID_FOR_LORA_DIO0 = 17
     
  
 def main(): 
     
-    # Controller(spi = spi, 
+    # Controller(
                # pin_id_led = ON_BOARD_LED_PIN_NO, 
                # on_board_led_high_is_on = ON_BOARD_LED_HIGH_IS_ON,
                # pin_id_reset = PIN_ID_FOR_LORA_RESET, 
@@ -47,8 +37,8 @@ def main():
                                # pin_id_CadDetected = PIN_ID_FOR_LORA_DIO4,
                                # pin_id_PayloadCrcError = PIN_ID_FOR_LORA_DIO5)                        
     lora = controller.add_transceiver(sx127x.SX127x(name = 'LoRa'),
-                                      pin_id_ss = PIN_ID_SS,
-                                      pin_id_RxDone = PIN_ID_FOR_LORA_DIO0)
+                                      pin_id_ss = config_lora.Controller.PIN_ID_FOR_LORA_SS,
+                                      pin_id_RxDone = config_lora.Controller.PIN_ID_FOR_LORA_DIO0)
     print('lora', lora)
     
 

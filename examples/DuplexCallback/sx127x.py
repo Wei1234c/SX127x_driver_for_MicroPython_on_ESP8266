@@ -84,11 +84,13 @@ class SX127x:
                  
         self.name = name
         self.parameters = parameters 
-        self._onReceive = onReceive
-        self._lock = False 
+        self._onReceive = onReceive        
+        self._lock = False
         
      
-    def init(self):
+    def init(self, parameters = None):
+        if parameters: self.parameters = parameters
+            
         # check version
         version = self.readRegister(REG_VERSION)
         if version != 0x12:

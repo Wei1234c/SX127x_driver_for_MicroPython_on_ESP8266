@@ -14,17 +14,20 @@ except Exception as e:
 
 class Controller(controller.Controller):
     
+    # BOARD config
     ON_BOARD_LED_PIN_NO = 47  # RPi's on-board LED
     ON_BOARD_LED_HIGH_IS_ON = True
     GPIO_PINS = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 16, 27,)
-            
+
+    
+    # LoRa config
     PIN_ID_FOR_LORA_RESET = 5
 
+    PIN_ID_FOR_LORA_SS = 8
     PIN_ID_SCK = 11
     PIN_ID_MOSI = 10
     PIN_ID_MISO = 9
 
-    PIN_ID_FOR_LORA_SS = 8
     PIN_ID_FOR_LORA_DIO0 = 17
     PIN_ID_FOR_LORA_DIO1 = None 
     PIN_ID_FOR_LORA_DIO2 = None 
@@ -32,34 +35,14 @@ class Controller(controller.Controller):
     PIN_ID_FOR_LORA_DIO4 = None
     PIN_ID_FOR_LORA_DIO5 = None 
     
-    spi = None
-    try: 
-        if not spi:
-            spi = spidev.SpiDev()
-            bus = 0
-            device = 0
-            spi.open(bus, device)            
-            spi.max_speed_hz = 10000000
-            spi.mode = 0b00
-            spi.lsbfirst = False
-            
-    except Exception as e:
-        print(e)
-        GPIO.cleanup()
-        if spi:
-            spi.close()
-            spi = None
-
 
     def __init__(self, 
-                 spi = spi, 
                  pin_id_led = ON_BOARD_LED_PIN_NO, 
                  on_board_led_high_is_on = ON_BOARD_LED_HIGH_IS_ON,
                  pin_id_reset = PIN_ID_FOR_LORA_RESET,
                  blink_on_start = (2, 0.5, 0.5)):
                 
-        super().__init__(spi, 
-                         pin_id_led,
+        super().__init__(pin_id_led,
                          on_board_led_high_is_on,
                          pin_id_reset,
                          blink_on_start)
@@ -90,6 +73,28 @@ class Controller(controller.Controller):
             pin.detach_irq = lambda : GPIO.remove_event_detect(pin.pin_id) 
             return pin
 
+            
+    def get_spi(self):             
+        spi = None
+        
+        try: 
+            spi = spidev.SpiDev()
+            bus = 0
+            device = 0
+            spi.open(bus, device)            
+            spi.max_speed_hz = 10000000
+            spi.mode = 0b00
+            spi.lsbfirst = False
+                
+        except Exception as e:
+            print(e)
+            GPIO.cleanup()
+            if spi:
+                spi.close()
+                spi = None
+        
+        return spi
+        
             
     # https://www.raspberrypi.org/documentation/hardware/raspberrypi/spi/README.md
     # https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=19489

@@ -5,6 +5,7 @@ import controller
 
 class Controller(controller.Controller):
 
+    # LoRa config
     PIN_ID_FOR_LORA_RESET = 4 
 
     PIN_ID_FOR_LORA_SS = 15
@@ -17,49 +18,30 @@ class Controller(controller.Controller):
     PIN_ID_FOR_LORA_DIO2 = None 
     PIN_ID_FOR_LORA_DIO3 = None
     PIN_ID_FOR_LORA_DIO4 = None
-    PIN_ID_FOR_LORA_DIO5 = None 
+    PIN_ID_FOR_LORA_DIO5 = None  
     
-    spi = None
     
+    # ESP config
     if config_lora.IS_ESP8266:
         ON_BOARD_LED_PIN_NO = 2
         ON_BOARD_LED_HIGH_IS_ON = False
-        GPIO_PINS = (0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 16)
-        if not spi:
-            spi = SPI(1, baudrate = 10000000, polarity = 0, phase = 0)
-            spi.init()
+        GPIO_PINS = (0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 16) 
         
     if config_lora.IS_ESP32:
         ON_BOARD_LED_PIN_NO = 2
         ON_BOARD_LED_HIGH_IS_ON = True
         GPIO_PINS = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
                      12, 13, 14, 15, 16, 17, 18, 19, 21, 22,
-                     23, 25, 26, 27, 32, 34, 35, 36, 37, 38, 39)                     
-        try:
-            if not spi: 
-                spi = SPI(1, baudrate = 10000000, polarity = 0, phase = 0, bits = 8, firstbit = SPI.MSB,
-                          sck = Pin(PIN_ID_SCK, Pin.OUT),
-                          mosi = Pin(PIN_ID_MOSI, Pin.OUT),
-                          miso = Pin(PIN_ID_MISO, Pin.IN))
-                spi.init()
-                
-        except Exception as e:
-            print(e)
-            if spi: 
-                spi.deinit()
-                spi = None
-            reset()  # in case SPI is already in use, need to reset. 
+                     23, 25, 26, 27, 32, 34, 35, 36, 37, 38, 39) 
 
     
-    def __init__(self, 
-                 spi = spi, 
+    def __init__(self,   
                  pin_id_led = ON_BOARD_LED_PIN_NO, 
                  on_board_led_high_is_on = ON_BOARD_LED_HIGH_IS_ON,
                  pin_id_reset = PIN_ID_FOR_LORA_RESET,
                  blink_on_start = (2, 0.5, 0.5)):
                 
-        super().__init__(spi, 
-                         pin_id_led,
+        super().__init__(pin_id_led,
                          on_board_led_high_is_on,
                          pin_id_reset,
                          blink_on_start)
@@ -87,7 +69,32 @@ class Controller(controller.Controller):
             pin.set_handler_for_irq_on_rising_edge = lambda handler: pin.irq(handler = handler, trigger = Pin.IRQ_RISING)
             pin.detach_irq = lambda : pin.irq(handler = None, trigger = 0)
             return pin
-
+            
+            
+    def get_spi(self): 
+        spi = None
+        
+        if config_lora.IS_ESP8266:
+            spi = SPI(1, baudrate = 10000000, polarity = 0, phase = 0)
+            spi.init()
+            
+        if config_lora.IS_ESP32:                  
+            try:
+                spi = SPI(1, baudrate = 10000000, polarity = 0, phase = 0, bits = 8, firstbit = SPI.MSB,
+                          sck = Pin(self.PIN_ID_SCK, Pin.OUT),
+                          mosi = Pin(self.PIN_ID_MOSI, Pin.OUT),
+                          miso = Pin(self.PIN_ID_MISO, Pin.IN))
+                spi.init()
+                    
+            except Exception as e:
+                print(e)
+                if spi: 
+                    spi.deinit()
+                    spi = None
+                reset()  # in case SPI is already in use, need to reset. 
+        
+        return spi
+        
             
     def prepare_spi(self, spi): 
         if spi:

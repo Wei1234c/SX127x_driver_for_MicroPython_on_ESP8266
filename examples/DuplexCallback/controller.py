@@ -4,8 +4,7 @@ from time import sleep
 class Controller:
 
     class Mock:
-        pass  
-        
+        pass        
 
     ON_BOARD_LED_PIN_NO = None
     ON_BOARD_LED_HIGH_IS_ON = True
@@ -13,22 +12,20 @@ class Controller:
                  
     PIN_ID_FOR_LORA_RESET = None
     
+    PIN_ID_FOR_LORA_SS = None 
     PIN_ID_SCK = None 
     PIN_ID_MOSI = None 
-    PIN_ID_MISO = None 
-
-    PIN_ID_FOR_LORA_SS = None                 
+    PIN_ID_MISO = None
+                    
     PIN_ID_FOR_LORA_DIO0 = None 
     PIN_ID_FOR_LORA_DIO1 = None 
     PIN_ID_FOR_LORA_DIO2 = None 
     PIN_ID_FOR_LORA_DIO3 = None
     PIN_ID_FOR_LORA_DIO4 = None
     PIN_ID_FOR_LORA_DIO5 = None
-    
-    spi = None    
+     
     
     def __init__(self,
-                 spi = spi, 
                  pin_id_led = ON_BOARD_LED_PIN_NO, 
                  on_board_led_high_is_on = ON_BOARD_LED_HIGH_IS_ON,
                  pin_id_reset = PIN_ID_FOR_LORA_RESET, 
@@ -36,9 +33,9 @@ class Controller:
                  
         self.pin_led = self.prepare_pin(pin_id_led)
         self.on_board_led_high_is_on = on_board_led_high_is_on
-        self.pin_reset = self.prepare_pin(pin_id_reset)
-        self.spi = self.prepare_spi(spi)
-        self.reset_transceivers()
+        self.pin_reset = self.prepare_pin(pin_id_reset)        
+        self.spi = self.prepare_spi(self.get_spi())
+        self.reset_pin(self.pin_reset)
         self.transceivers = {}
         self.blink_led(*blink_on_start)
         
@@ -73,10 +70,11 @@ class Controller:
     def prepare_pin(self, pin_id, in_out = None):
         reason = '''
             # a pin should provide:
+            # .pin_id
             # .low()
             # .high()
             # .value()  # read input.
-            # .irq()  # ref to the irq function of real pin object.
+            # .irq()    # (ESP8266/ESP32 only) ref to the irq function of real pin object.
         '''
         raise NotImplementedError('reason')
         
@@ -89,12 +87,19 @@ class Controller:
         '''
         raise NotImplementedError('reason')
         
-
+        
+    def get_spi(self): 
+        reason = '''
+            # initialize SPI interface 
+        '''
+        raise NotImplementedError('reason')  
+        
+        
     def prepare_spi(self, spi): 
         reason = '''
             # a spi should provide: 
             # .close()
-            # .transfer(address, value = 0x00) 
+            # .transfer(pin_ss, address, value = 0x00) 
         '''
         raise NotImplementedError('reason')        
 
@@ -111,10 +116,10 @@ class Controller:
             sleep(off_seconds) 
             
 
-    def reset_transceivers(self, duration_low = 0.01, duration_high = 0.01):
-        self.pin_reset.low()
+    def reset_pin(self, pin, duration_low = 0.05, duration_high = 0.05):
+        pin.low()
         sleep(duration_low)
-        self.pin_reset.high()
+        pin.high()
         sleep(duration_high)
         
         

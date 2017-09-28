@@ -3,10 +3,11 @@ import os
 import time
 
 
-IS_MICROPYTHON = (sys.implementation.name == 'micropython')
 IS_PC = False
-IS_ESP32 = (os.uname().sysname == 'esp32')
+IS_MICROPYTHON = (sys.implementation.name == 'micropython')
 IS_ESP8266 = (os.uname().sysname == 'esp8266')
+IS_ESP32 = (os.uname().sysname == 'esp32') 
+IS_TTGO_LORA_OLED = False
 IS_RPi = not (IS_MICROPYTHON or IS_PC)
 
 
@@ -16,28 +17,30 @@ def mac2eui(mac):
     
 
 if IS_MICROPYTHON:
-        
+            
     # Node Name
     from machine import unique_id
-    import ubinascii
-    unique_id = ubinascii.hexlify(unique_id()).decode()  
+    import ubinascii 
+    uuid = ubinascii.hexlify(unique_id()).decode()  
         
     if IS_ESP8266:
         NODE_NAME = 'ESP8266_'
     if IS_ESP32:
-        NODE_NAME = 'ESP32_'
+        NODE_NAME = 'ESP32_'        
+        import esp
+        IS_TTGO_LORA_OLED = (esp.flash_size() > 5000000)
         
-    NODE_EUI = mac2eui(unique_id)
-    NODE_NAME = NODE_NAME + unique_id
-    # NODE_NAME = NODE_NAME + NODE_EUI    
+    NODE_EUI = mac2eui(uuid)
+    NODE_NAME = NODE_NAME + uuid    
     
     # millisecond
     millisecond = time.ticks_ms
-    # microsecond = time.ticks_us
-
     
     # Controller
-    from controller_esp import Controller
+    if IS_TTGO_LORA_OLED:
+        from controller_esp_ttgo_lora_oled import Controller
+    else:
+        from controller_esp import Controller
     
     
         
