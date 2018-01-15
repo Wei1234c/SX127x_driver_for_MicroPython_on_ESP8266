@@ -43,9 +43,9 @@ def sendMessage(lora, outgoing):
 def receive(lora):
     if lora.receivedPacket(): 
         lora.blink_led() 
-        payload = lora.read_payload()
                 
         try:
+			payload = lora.read_payload()
             print("*** Received message ***\n{}".format(payload.decode()))
         except Exception as e:
             print(e)

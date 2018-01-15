@@ -102,7 +102,7 @@ class SX127x:
         
         
         # config
-        self.setFrequency(self.parameters['frequency'])
+        self.setFrequency(self.parameters['frequency']) 
         self.setSignalBandwidth(self.parameters['signal_bandwidth'])
 
         # set LNA boost
@@ -113,12 +113,16 @@ class SX127x:
 
         self.setTxPower(self.parameters['tx_power_level'])
         self._implicitHeaderMode = None
-        self.implicitHeaderMode(self.parameters['implicitHeader'])      
+        self.implicitHeaderMode(self.parameters['implicitHeader'])
         self.setSpreadingFactor(self.parameters['spreading_factor'])
         self.setCodingRate(self.parameters['coding_rate'])
         self.setPreambleLength(self.parameters['preamble_length'])
         self.setSyncWord(self.parameters['sync_word'])
         self.enableCRC(self.parameters['enable_CRC'])
+        
+        # set LowDataRateOptimize flag if symbol time > 16ms (default disable on reset)
+        if 1000 / (self.parameters['signal_bandwidth'] / 2**self.parameters['spreading_factor']) > 16:
+            self.writeRegister(REG_MODEM_CONFIG_3, 0x04 | 0x08)
         
         # set base addresses
         self.writeRegister(REG_FIFO_TX_BASE_ADDR, FifoTxBaseAddr)
@@ -243,12 +247,14 @@ class SX127x:
         
     def setSignalBandwidth(self, sbw):        
         bins = (7.8E3, 10.4E3, 15.6E3, 20.8E3, 31.25E3, 41.7E3, 62.5E3, 125E3, 250E3)
-        
+
         bw = 9        
         for i in range(len(bins)):
             if sbw <= bins[i]:
                 bw = i
                 break
+                
+        # bw = bins.index(sbw)
         
         self.writeRegister(REG_MODEM_CONFIG_1, (self.readRegister(REG_MODEM_CONFIG_1) & 0x0f) | (bw << 4))
 
@@ -281,9 +287,9 @@ class SX127x:
             # self.writeRegister(REG_IRQ_FLAGS_MASK, self.readRegister(REG_IRQ_FLAGS_MASK) | IRQ_RX_DONE_MASK)
    
    
-    def dumpRegisters(self):
-        for i in range(128):
-            print("0x{0:02x}: {1:02x}".format(i, self.readRegister(i)))
+    # def dumpRegisters(self):
+        # for i in range(128):
+            # print("0x{0:02x}: {1:02x}".format(i, self.readRegister(i)))
 
     
     def implicitHeaderMode(self, implicitHeaderMode = False):
