@@ -121,8 +121,9 @@ class SX127x:
         self.enableCRC(self.parameters['enable_CRC'])
         
         # set LowDataRateOptimize flag if symbol time > 16ms (default disable on reset)
+        # self.writeRegister(REG_MODEM_CONFIG_3, self.readRegister(REG_MODEM_CONFIG_3) & 0xF7)  # default disable on reset
         if 1000 / (self.parameters['signal_bandwidth'] / 2**self.parameters['spreading_factor']) > 16:
-            self.writeRegister(REG_MODEM_CONFIG_3, 0x04 | 0x08)
+            self.writeRegister(REG_MODEM_CONFIG_3, self.readRegister(REG_MODEM_CONFIG_3) | 0x08)
         
         # set base addresses
         self.writeRegister(REG_FIFO_TX_BASE_ADDR, FifoTxBaseAddr)
