@@ -17,7 +17,7 @@ class Controller(controller.Controller):
     # BOARD config
     ON_BOARD_LED_PIN_NO = 47  # RPi's on-board LED
     ON_BOARD_LED_HIGH_IS_ON = True
-    GPIO_PINS = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 16, 27,)
+    GPIO_PINS = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,)
 
     
     # LoRa config
