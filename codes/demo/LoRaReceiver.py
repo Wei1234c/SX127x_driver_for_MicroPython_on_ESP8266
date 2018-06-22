@@ -6,8 +6,9 @@ def receive(lora):
             lora.blink_led()
                     
             try:
-				payload = lora.read_payload()
+                payload = lora.read_payload()
                 print("*** Received message ***\n{}".format(payload.decode()))
             except Exception as e:
                 print(e)
-            print("with RSSI: {}\n".format(lora.packetRssi()))
+            print("with RSSI: {}\n".format(lora.packetRssi))
+            
