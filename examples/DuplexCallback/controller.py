@@ -75,7 +75,7 @@ class Controller:
             # .value()  # read input.
             # .irq()    # (ESP8266/ESP32 only) ref to the irq function of real pin object.
         '''
-        raise NotImplementedError('reason')
+        raise NotImplementedError(reason)
         
 
     def prepare_irq_pin(self, pin_id):
@@ -84,14 +84,14 @@ class Controller:
             # .set_handler_for_irq_on_rising_edge()  # to set trigger and handler.
             # .detach_irq()
         '''
-        raise NotImplementedError('reason')
+        raise NotImplementedError(reason)
         
         
     def get_spi(self): 
         reason = '''
             # initialize SPI interface 
         '''
-        raise NotImplementedError('reason')  
+        raise NotImplementedError(reason)
         
         
     def prepare_spi(self, spi): 
@@ -100,7 +100,7 @@ class Controller:
             # .close()
             # .transfer(pin_ss, address, value = 0x00) 
         '''
-        raise NotImplementedError('reason')        
+        raise NotImplementedError(reason)
 
 
     def led_on(self, on = True):
