@@ -2,7 +2,6 @@ import sys
 import os 
 import time
 
-
 IS_PC = False
 IS_MICROPYTHON = (sys.implementation.name == 'micropython')
 IS_ESP8266 = (os.uname().sysname == 'esp8266')
