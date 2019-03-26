@@ -1,17 +1,17 @@
-def receiveCallback(lora): 
-    
+def receiveCallback(lora):
     print("LoRa Receiver Callback")
-    
+
     # register the receive callback
     lora.onReceive(on_receive)
 
     # put the radio into receive mode
-    lora.receive()  
+    lora.receive()
 
-    
+
+
 def on_receive(lora, payload):
-    lora.blink_led() 
-            
+    lora.blink_led()
+
     try:
         print("*** Received message ***\n{}".format(payload.decode()))
     except Exception as e:
