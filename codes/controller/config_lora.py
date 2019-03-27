@@ -1,14 +1,15 @@
-import sys
 import os
+import sys
 import time
 
 
-IS_PC = False
-IS_MICROPYTHON = (sys.implementation.name == 'micropython')
-IS_ESP8266 = (os.uname().sysname == 'esp8266')
-IS_ESP32 = (os.uname().sysname == 'esp32')
+machine = os.uname().machine
+IS_PC = machine.startswith('x86_64', )
+IS_RPi = machine.startswith('armv')
+IS_ESP8266 = machine.startswith('ESP8266')
+IS_ESP32 = machine.startswith('ESP32')
 IS_TTGO_LORA_OLED = None
-IS_RPi = not (IS_MICROPYTHON or IS_PC)
+IS_MICROPYTHON = (sys.implementation.name == 'micropython')
 
 
 
@@ -18,7 +19,7 @@ def mac2eui(mac):
 
 
 
-if IS_MICROPYTHON:
+if IS_MICROPYTHON and (IS_ESP32 or IS_ESP8266):
 
     # Node Name
     import machine
@@ -45,8 +46,6 @@ if IS_MICROPYTHON:
     # Controller
     SOFT_SPI = None
     if IS_TTGO_LORA_OLED:
-        from controller_esp_ttgo_lora_oled import Controller
-
 
         SOFT_SPI = True
     else:
@@ -78,4 +77,4 @@ if IS_PC:
     millisecond = lambda: time.time() * 1000
 
     # Controller
-    from controller_pc import Controller
+    # from controller_pc import Controller
