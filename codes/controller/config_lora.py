@@ -34,9 +34,6 @@ if IS_MICROPYTHON and (IS_ESP32 or IS_ESP8266):
         NODE_NAME = 'ESP32_'
         import esp
 
-
-        IS_TTGO_LORA_OLED = (esp.flash_size() > 5000000)
-
     NODE_EUI = mac2eui(uuid)
     NODE_NAME = NODE_NAME + uuid
 
@@ -45,9 +42,11 @@ if IS_MICROPYTHON and (IS_ESP32 or IS_ESP8266):
 
     # Controller
     SOFT_SPI = None
-    if IS_TTGO_LORA_OLED:
+    IS_TTGO_LORA_OLED = (esp.flash_size() > 5000000)
 
+    if IS_TTGO_LORA_OLED:
         SOFT_SPI = True
+        from controller_esp_ttgo_lora_oled import Controller
     else:
         from controller_esp import Controller
 
