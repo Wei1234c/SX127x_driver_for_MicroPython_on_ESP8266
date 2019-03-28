@@ -3,8 +3,12 @@ import sys
 import time
 
 
-machine = os.uname().machine
-IS_PC = machine.startswith('x86_64', )
+try:
+    machine = os.uname().machine
+except Exception:
+    machine = os.name
+
+IS_PC = machine.startswith('x86_64') or machine.startswith('nt')
 IS_RPi = machine.startswith('armv')
 IS_ESP8266 = machine.startswith('ESP8266')
 IS_ESP32 = machine.startswith('ESP32')
