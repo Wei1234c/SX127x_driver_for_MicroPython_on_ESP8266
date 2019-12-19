@@ -35,7 +35,7 @@ class Controller:
         self.pin_led = self.prepare_pin(pin_id_led)
         self.on_board_led_high_is_on = on_board_led_high_is_on
         self.pin_reset = self.prepare_pin(pin_id_reset)
-        self.reset_pin(self.pin_reset)
+        self.reset_transceivers()
         self.spi = self.prepare_spi(self.get_spi())
         self.transceivers = {}
         self.blink_led(*blink_on_start)
@@ -121,6 +121,10 @@ class Controller:
         sleep(duration_low)
         pin.high()
         sleep(duration_high)
+
+
+    def reset_transceivers(self):
+        self.reset_pin(self.pin_reset)
 
 
     def __exit__(self):
