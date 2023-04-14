@@ -10,4 +10,4 @@ def receive(lora):
                 print("*** Received message ***\n{}".format(payload.decode()))
             except Exception as e:
                 print(e)
-            print("with RSSI: {}\n".format(lora.packetRssi))
+            print("with RSSI: {}\n".format(lora.packetRssi()))
