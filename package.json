@@ -1,7 +1,13 @@
 {
   "urls": [
-    ["sx127x.py", "github:Wei1234c/SX127x_driver_for_MicroPython_on_ESP8266/codes/sx127x/sx127x.py"],
-    ["controller_esp.py", "github:Wei1234c/SX127x_driver_for_MicroPython_on_ESP8266/codes/controller/controller_esp.py"]
+    [
+      "sx127x.py",
+      "github:Wei1234c/SX127x_driver_for_MicroPython_on_ESP8266/codes/sx127x/sx127x.py"
+    ],
+    [
+      "controller_esp.py",
+      "github:Wei1234c/SX127x_driver_for_MicroPython_on_ESP8266/codes/controller/controller_esp.py"
+    ]
   ],
   "version": "1.0.0",
   "deps": []
